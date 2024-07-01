@@ -145,30 +145,8 @@
         currentProfile = Minecraft.$theWorld.$playerEntities.$array1.find(element => safeGetPlayerName(element) === name);
         if (currentProfile) {
             Minecraft.$renderViewEntity = currentProfile;
-            if (currentProfile === Minecraft.$thePlayer) {
-                Minecraft.$gameSettings.$hideGUI = 0;
-                Minecraft.$thePlayer.$inventory.$markDirty();
-            } else {
-                Minecraft.$gameSettings.$hideGUI = 0;
-            }
+            Minecraft.$gameSettings.$hideGUI = 0;
             updatePlayerList();
-        }
-    }
-
-    function updateSpectatorView() {
-        if (currentProfile && currentProfile !== Minecraft.$thePlayer) {
-            if (Minecraft.$renderViewEntity !== currentProfile) {
-                Minecraft.$renderViewEntity = currentProfile;
-                Minecraft.$thePlayer.$inventory.$markDirty();
-            }
-            if (currentProfile.$inventory && currentProfile.$inventory.$mainInventory && 
-                Minecraft.$thePlayer.$inventory && Minecraft.$thePlayer.$inventory.$mainInventory) {
-                for (let i = 0; i < 36; i++) {
-                    Minecraft.$thePlayer.$inventory.$mainInventory.$array1.data[i] = 
-                        currentProfile.$inventory.$mainInventory.$array1.data[i];
-                }
-                Minecraft.$thePlayer.$inventory.$currentItem = currentProfile.$inventory.$currentItem;
-            }
         }
     }
 
@@ -186,7 +164,6 @@
         if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities && 
             Minecraft.$theWorld.$playerEntities.$array1 && 
             Minecraft.$theWorld.$playerEntities.$array1.length > 1) {
-            updateSpectatorView();
             toggleButton.style.display = 'flex';
         } else {
             toggleButton.style.display = 'none';
