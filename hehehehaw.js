@@ -131,7 +131,7 @@
 
     function selectPlayer(name) {
         currentProfile = Minecraft.$theWorld.$playerEntities.$array1.data.find(element => {
-            return element && element.$getName && typeof element.$getName === 'function' && element.$getName() === name;
+            return element && element.$getName && typeof element.$getName === 'function' && decoder.decode(new Uint8Array(element.$getName().$characters.data)) === name;
         });
         if (currentProfile) {
             Minecraft.$renderViewEntity = currentProfile;
@@ -179,25 +179,30 @@
     });
 
     // Make the menu draggable
-    let isDragging = false;
-    let dragOffsetX, dragOffsetY;
+    function makeDraggable(element) {
+        let isDragging = false;
+        let dragOffsetX, dragOffsetY;
 
-    title.addEventListener('mousedown', function(e) {
-        isDragging = true;
-        dragOffsetX = e.clientX - menu.offsetLeft;
-        dragOffsetY = e.clientY - menu.offsetTop;
-    });
+        element.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            dragOffsetX = e.clientX - element.offsetLeft;
+            dragOffsetY = e.clientY - element.offsetTop;
+        });
 
-    document.addEventListener('mousemove', function(e) {
-        if (isDragging) {
-            menu.style.left = (e.clientX - dragOffsetX) + 'px';
-            menu.style.top = (e.clientY - dragOffsetY) + 'px';
-        }
-    });
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                element.style.left = (e.clientX - dragOffsetX) + 'px';
+                element.style.top = (e.clientY - dragOffsetY) + 'px';
+            }
+        });
 
-    document.addEventListener('mouseup', function() {
-        isDragging = false;
-    });
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+    }
+
+    makeDraggable(menu);
+    makeDraggable(toggleButton);
 
     document.body.appendChild(menu);
     document.body.appendChild(toggleButton);
