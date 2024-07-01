@@ -1,6 +1,8 @@
 (function() {
+    let decoder = new TextDecoder();
+    let listPseudos;
     let menuVisible = false;
-    let currentProfile = null;
+    let profile;
 
     // Create menu container
     let menu = document.createElement('div');
@@ -33,16 +35,18 @@
     `;
     menu.appendChild(title);
 
-    // Create player list
-    let playerList = document.createElement('ul');
-    playerList.style.cssText = `
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-        max-height: 300px;
-        overflow-y: auto;
+    // Create player select
+    let select = document.createElement('select');
+    select.style.cssText = `
+        width: 100%;
+        padding: 5px;
+        margin-top: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: #ffffff;
+        border: 1px solid #4CAF50;
+        border-radius: 5px;
     `;
-    menu.appendChild(playerList);
+    menu.appendChild(select);
 
     // Create toggle button
     let toggleButton = document.createElement('button');
@@ -62,92 +66,74 @@
         z-index: 1001;
     `;
 
-    function safeGetPlayerName(entity) {
-        try {
-            if (entity && entity.$getName && typeof entity.$getName === 'function') {
-                const nameObj = entity.$getName();
-                if (nameObj && nameObj.$characters && nameObj.$characters.data) {
-                    return new TextDecoder().decode(new Uint8Array(nameObj.$characters.data));
+    select.addEventListener('mousedown', function (e) {
+        if (Minecraft.$theWorld) {
+            select.innerHTML = "";
+            listPseudos = [];
+            Minecraft.$theWorld.$playerEntities.$array1.data.forEach(element => {
+                if (element) {
+                    listPseudos.push(decoder.decode(new Uint8Array(element.$getName().$characters.data)));
                 }
+            });
+            listPseudos.forEach(element => {
+                let option = document.createElement('option');
+                option.innerText = element + ((listPseudos.indexOf(element) === 0)?" (you)":"");
+                option.value = element;
+                select.appendChild(option);
+            });
+            if (document.querySelector(`option[value="${Minecraft.$renderViewEntity.$getName()}"]`)) {
+                document.querySelector(`option[value="${Minecraft.$renderViewEntity.$getName()}"]`).toggleAttribute('selected');
             }
-        } catch (error) {
-            console.error("Error getting player name:", error);
         }
-        return null;
-    }
+    });
 
-    function updatePlayerList() {
-        try {
-            if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities && Minecraft.$theWorld.$playerEntities.$array1) {
-                playerList.innerHTML = "";
-                Minecraft.$theWorld.$playerEntities.$array1.forEach(entity => {
-                    if (entity) {
-                        let name = safeGetPlayerName(entity);
-                        if (name) {
-                            let li = document.createElement('li');
-                            li.textContent = name + ((entity === Minecraft.$thePlayer) ? " (you)" : "");
-                            li.style.cssText = `
-                                padding: 5px 10px;
-                                cursor: pointer;
-                                transition: background-color 0.3s;
-                            `;
-                            li.onmouseover = () => { li.style.backgroundColor = 'rgba(76, 175, 80, 0.3)'; };
-                            li.onmouseout = () => { li.style.backgroundColor = ''; };
-                            li.onclick = () => selectPlayer(entity);
-                            if (currentProfile === entity) {
-                                li.style.backgroundColor = 'rgba(76, 175, 80, 0.5)';
-                            }
-                            playerList.appendChild(li);
-                        }
-                    }
-                });
-            }
-        } catch (error) {
-            console.error("Error updating player list:", error);
+    function keepLoadedPlayer() {
+        if (profile !== Minecraft.$thePlayer) {
+            Minecraft.$renderViewEntity = Minecraft.$thePlayer;
+            setTimeout(function() {Minecraft.$renderViewEntity = profile;}, 0);
         }
     }
 
-    function selectPlayer(player) {
-        try {
-            if (player) {
-                currentProfile = player;
-                Minecraft.$renderViewEntity = player;
-                Minecraft.$gameSettings.$hideGUI = 0; // Show UI
-                updatePlayerList();
+    select.addEventListener('change', function (e) {
+        window.profile = Minecraft.$theWorld.$playerEntities.$array1.data.find(function (element) {
+            if (element) {
+                return element.$getName() == select.value;
+            } else {
+                return null;
             }
-        } catch (error) {
-            console.error("Error selecting player:", error);
+        });
+        if (profile) {
+            Minecraft.$renderViewEntity = profile;
+            if (typeof(keepLoadedPlayerInterval) !== "undefined") {
+                clearInterval(keepLoadedPlayerInterval);
+            }
+            if (profile === Minecraft.$thePlayer) {
+                Minecraft.$gameSettings.$hideGUI = 0;
+            } else {
+                Minecraft.$gameSettings.$hideGUI = 0; // Changed to 0 to keep UI visible
+                window.keepLoadedPlayerInterval = setInterval(keepLoadedPlayer, 1000);
+            }
         }
-    }
+    });
 
     function toggleMenu() {
-        try {
-            menuVisible = !menuVisible;
-            menu.style.display = menuVisible ? 'block' : 'none';
-            if (menuVisible) {
-                updatePlayerList();
-            }
-        } catch (error) {
-            console.error("Error toggling menu:", error);
+        menuVisible = !menuVisible;
+        menu.style.display = menuVisible ? 'block' : 'none';
+        if (menuVisible) {
+            select.dispatchEvent(new Event('mousedown'));
         }
     }
 
     toggleButton.addEventListener('click', toggleMenu);
 
+    ModAPI.addEventListener("frame", () => {
+        if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities.$array1.data.length > 1) {
+            toggleButton.style.display = "block";
+        } else {
+            toggleButton.style.display = "none";
+        }
+    });
+
     document.body.appendChild(menu);
     document.body.appendChild(toggleButton);
-
-    // Ensure the toggle button is always visible
-    setInterval(() => {
-        if (!document.body.contains(toggleButton)) {
-            document.body.appendChild(toggleButton);
-        }
-    }, 1000);
-
-    // Update player list periodically when menu is open
-    setInterval(() => {
-        if (menuVisible) {
-            updatePlayerList();
-        }
-    }, 5000);
 })();
