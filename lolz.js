@@ -3,7 +3,6 @@
     var menuVisible = false;
     var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
     var currentTheme = localStorage.getItem('xrayTheme') || 'default';
-    var miningStats = JSON.parse(localStorage.getItem('xrayMiningStats')) || {};
 
     // Inject custom CSS
     var style = document.createElement('style');
@@ -167,7 +166,7 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        .xray-settings-button, .xray-exit-button, .xray-stats-button {
+        .xray-settings-button, .xray-exit-button {
             position: absolute;
             padding: 5px 10px;
             background-color: #4CAF50;
@@ -181,11 +180,10 @@
         }
         .xray-settings-button { top: 10px; right: 50px; }
         .xray-exit-button { top: 10px; right: 10px; }
-        .xray-stats-button { bottom: 10px; right: 10px; }
-        .xray-settings-button:hover, .xray-exit-button:hover, .xray-stats-button:hover {
+        .xray-settings-button:hover, .xray-exit-button:hover {
             background-color: #45a049;
         }
-        .xray-settings-menu, .xray-stats-panel {
+        .xray-settings-menu {
             position: absolute;
             background-color: rgba(0, 0, 0, 0.8);
             padding: 20px;
@@ -196,12 +194,8 @@
             display: none;
         }
         .xray-settings-menu { top: 50px; right: 10px; }
-        .xray-stats-panel {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .xray-settings-menu button, .xray-stats-content {
+        
+        .xray-settings-menu button {
             display: block;
             width: 100%;
             padding: 5px;
@@ -214,21 +208,6 @@
         }
         .xray-settings-menu button:hover {
             background-color: #666;
-        }
-        .xray-stats-content {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .xray-stat-item {
-            display: flex;
-            align-items: center;
-        }
-        .xray-stat-icon {
-            width: 24px;
-            height: 24px;
-            margin-right: 10px;
-            image-rendering: pixelated;
         }
 
         /* UwU Theme - Crazy Edition */
@@ -275,8 +254,7 @@
         .uwu-theme .xray-ore-label,
         .uwu-theme .xray-add-button,
         .uwu-theme .xray-settings-button,
-        .uwu-theme .xray-exit-button,
-        .uwu-theme .xray-stats-button {
+        .uwu-theme .xray-exit-button {
             background-color: rgba(255, 182, 193, 0.7) !important;
             color: #FF1493 !important;
             border: 3px solid #FF69B4 !important;
@@ -287,8 +265,7 @@
         .uwu-theme .xray-ore-label:hover,
         .uwu-theme .xray-add-button:hover,
         .uwu-theme .xray-settings-button:hover,
-        .uwu-theme .xray-exit-button:hover,
-        .uwu-theme .xray-stats-button:hover {
+        .uwu-theme .xray-exit-button:hover {
             transform: scale(1.05);
             box-shadow: 0 0 15px #FF69B4, 0 0 30px #FF69B4, 0 0 45px #FF69B4;
         }
@@ -302,14 +279,12 @@
             content: '💖';
             font-size: 16px;
         }
-        .uwu-theme .xray-settings-menu,
-        .uwu-theme .xray-stats-panel {
+        .uwu-theme .xray-settings-menu {
             background-color: rgba(255, 192, 203, 0.9) !important;
             border: 3px solid #FF69B4;
             box-shadow: 0 0 20px #FF69B4;
         }
-        .uwu-theme .xray-settings-menu button,
-        .uwu-theme .xray-stats-content {
+        .uwu-theme .xray-settings-menu button {
             background-color: #FFB6C1 !important;
             color: #FF1493 !important;
             border: 2px solid #FF69B4;
@@ -361,13 +336,8 @@
         <button class="xray-add-button">Add Block</button>
         <button class="xray-settings-button">⚙️</button>
         <button class="xray-exit-button">❌</button>
-        <button class="xray-stats-button">📊 Stats</button>
         <div class="xray-settings-menu">
             <button class="xray-theme-toggle">Toggle UwU Theme</button>
-        </div>
-        <div class="xray-stats-panel">
-            <h2>Mining Statistics</h2>
-            <div class="xray-stats-content"></div>
         </div>
     `;
 
@@ -376,11 +346,8 @@
     var addButton = menuContainer.querySelector('.xray-add-button');
     var settingsButton = menuContainer.querySelector('.xray-settings-button');
     var exitButton = menuContainer.querySelector('.xray-exit-button');
-    var statsButton = menuContainer.querySelector('.xray-stats-button');
     var settingsMenu = menuContainer.querySelector('.xray-settings-menu');
     var themeToggle = menuContainer.querySelector('.xray-theme-toggle');
-    var statsPanel = menuContainer.querySelector('.xray-stats-panel');
-    var statsContent = statsPanel.querySelector('.xray-stats-content');
 
     function createBlockElement(textureName, customName, color, enabled) {
         var label = document.createElement('label');
@@ -595,55 +562,7 @@
             menuContainer.classList.remove('uwu-theme');
         }
     }
-
-    // Statistics tracking
-    var trackedOres = [
-        'stone', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 
-        'lapis_ore', 'redstone_ore', 'emerald_ore', 'nether_quartz_ore'
-    ];
-
-    trackedOres.forEach(ore => {
-        if (!(ore in miningStats)) {
-            miningStats[ore] = 0;
-        }
-    });
-
-    function updateStats(blockName) {
-        if (trackedOres.includes(blockName)) {
-            miningStats[blockName]++;
-            localStorage.setItem('xrayMiningStats', JSON.stringify(miningStats));
-        }
-    }
-
-    function displayStats() {
-        statsContent.innerHTML = '';
-        trackedOres.forEach(ore => {
-            statsContent.innerHTML += `
-                <div class="xray-stat-item">
-                    <img src="textures/blocks/${ore}.png" class="xray-stat-icon" alt="${ore}">
-                    <span>${ore.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}: ${miningStats[ore]}</span>
-                </div>
-            `;
-        });
-    }
-
-    statsButton.addEventListener('click', function() {
-        statsPanel.style.display = statsPanel.style.display === 'none' ? 'block' : 'none';
-        if (statsPanel.style.display === 'block') {
-            displayStats();
-        }
-    });
-
-    document.addEventListener('click', function(event) {
-        if (!statsPanel.contains(event.target) && event.target !== statsButton) {
-            statsPanel.style.display = 'none';
-        }
-    });
-
-    ModAPI.addEventListener("blockBreak", function(event) {
-        updateStats(event.block.name);
-    });
-
+    
     // Initial setup
     (function initializeXRay() {
         applyTheme();
