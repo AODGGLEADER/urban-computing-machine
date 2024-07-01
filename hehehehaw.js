@@ -16,6 +16,7 @@ menuContainer.style.borderRadius = '10px';
 menuContainer.style.color = 'white';
 menuContainer.style.fontFamily = 'Arial, sans-serif';
 menuContainer.style.zIndex = '1000';
+menuContainer.style.cursor = 'move';
 
 // Create title
 let title = document.createElement('h2');
@@ -99,12 +100,13 @@ function spectatePlayer() {
     });
     if (profile) {
         Minecraft.$renderViewEntity = profile;
-        if (profile === Minecraft.$thePlayer) {
-            Minecraft.$gameSettings.$hideGUI = 0;
-        } else {
-            Minecraft.$gameSettings.$hideGUI = 1;
-        }
+        Minecraft.$gameSettings.$hideGUI = false;  // Always show UI
     }
+}
+
+function resetToOwnView() {
+    Minecraft.$renderViewEntity = Minecraft.$thePlayer;
+    Minecraft.$gameSettings.$hideGUI = false;  // Ensure UI is visible
 }
 
 spectateButton.addEventListener('click', spectatePlayer);
@@ -112,6 +114,7 @@ spectateButton.addEventListener('click', spectatePlayer);
 closeButton.addEventListener('click', function() {
     menuContainer.style.display = 'none';
     menuVisible = false;
+    resetToOwnView();
 });
 
 document.addEventListener('keydown', function(e) {
@@ -122,6 +125,7 @@ document.addEventListener('keydown', function(e) {
             menuContainer.style.display = 'block';
         } else {
             menuContainer.style.display = 'none';
+            resetToOwnView();
         }
     }
 });
@@ -134,3 +138,49 @@ ModAPI.addEventListener("frame", () => {
         menuVisible = false;
     }
 });
+
+// Make the menu draggable
+let isDragging = false;
+let currentX;
+let currentY;
+let initialX;
+let initialY;
+let xOffset = 0;
+let yOffset = 0;
+
+function dragStart(e) {
+    initialX = e.clientX - xOffset;
+    initialY = e.clientY - yOffset;
+
+    if (e.target === menuContainer) {
+        isDragging = true;
+    }
+}
+
+function dragEnd(e) {
+    initialX = currentX;
+    initialY = currentY;
+
+    isDragging = false;
+}
+
+function drag(e) {
+    if (isDragging) {
+        e.preventDefault();
+        currentX = e.clientX - initialX;
+        currentY = e.clientY - initialY;
+
+        xOffset = currentX;
+        yOffset = currentY;
+
+        setTranslate(currentX, currentY, menuContainer);
+    }
+}
+
+function setTranslate(xPos, yPos, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+}
+
+menuContainer.addEventListener("mousedown", dragStart, false);
+document.addEventListener("mouseup", dragEnd, false);
+document.addEventListener("mousemove", drag, false);
