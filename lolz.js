@@ -23,26 +23,61 @@
 
     // Create menu
     var menu = document.createElement('div');
+    menu.id = 'SCMM';
     menu.style.position = 'fixed';
-    menu.style.top = '60px';
-    menu.style.left = '20px';
-    menu.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-    menu.style.padding = '10px';
-    menu.style.borderRadius = '5px';
+    menu.style.top = '0';
+    menu.style.left = '0';
+    menu.style.width = '100vw';
+    menu.style.height = '100vh';
+    menu.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
     menu.style.display = 'none';
+    menu.style.justifyContent = 'center';
+    menu.style.alignItems = 'center';
+    menu.style.zIndex = '9999';
     document.body.appendChild(menu);
+
+    var menuContainer = document.createElement('div');
+    menuContainer.style.width = '80%';
+    menuContainer.style.maxWidth = '800px';
+    menuContainer.style.height = '80%';
+    menuContainer.style.maxHeight = '600px';
+    menuContainer.style.backgroundColor = '#444';
+    menuContainer.style.borderRadius = '20px';
+    menuContainer.style.padding = '30px';
+    menuContainer.style.display = 'flex';
+    menuContainer.style.flexDirection = 'column';
+    menu.appendChild(menuContainer);
+
+    var menuHeader = document.createElement('div');
+    menuHeader.innerHTML = '<h1 style="color: #fff; font-size: 32px; margin-bottom: 20px;">X-Ray Menu</h1>';
+    menuContainer.appendChild(menuHeader);
+
+    // Create search input
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search ores...';
+    searchInput.style.width = '100%';
+    searchInput.style.padding = '10px';
+    searchInput.style.marginBottom = '20px';
+    searchInput.style.borderRadius = '5px';
+    searchInput.style.border = 'none';
+    menuContainer.appendChild(searchInput);
+
+    // Create container for ore options
+    var oreContainer = document.createElement('div');
+    menuContainer.appendChild(oreContainer);
 
     // Create checkboxes for each target
     targets.forEach(target => {
         var label = document.createElement('label');
         label.style.display = 'block';
-        label.style.marginBottom = '5px';
+        label.style.marginBottom = '10px';
         label.style.color = '#fff';
         label.style.fontFamily = 'Arial, sans-serif';
 
         var checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.style.marginRight = '5px';
+        checkbox.style.marginRight = '10px';
 
         var text = document.createTextNode(target.replace('_ore', '').toUpperCase());
 
@@ -54,7 +89,20 @@
             update();
         });
 
-        menu.appendChild(label);
+        oreContainer.appendChild(label);
+    });
+
+    // Add search functionality
+    searchInput.addEventListener('input', function() {
+        var searchTerm = this.value.toLowerCase();
+        Array.from(oreContainer.children).forEach(label => {
+            var oreText = label.textContent.toLowerCase();
+            if (oreText.includes(searchTerm)) {
+                label.style.display = 'block';
+            } else {
+                label.style.display = 'none';
+            }
+        });
     });
 
     function update() {
@@ -64,33 +112,10 @@
             if (targets.includes(block)) {
                 if (targetStates[block]) {
                     ModAPI.blocks[block].forceRender = true;
-                    // Add highlight
-                    switch(block) {
-                        case 'diamond_ore':
-                            ModAPI.blocks[block].tint = 0x00FFFF; // Light blue
-                            break;
-                        case 'gold_ore':
-                            ModAPI.blocks[block].tint = 0xFFD700; // Gold
-                            break;
-                        case 'iron_ore':
-                            ModAPI.blocks[block].tint = 0xD3D3D3; // Light gray
-                            break;
-                        case 'coal_ore':
-                            ModAPI.blocks[block].tint = 0x36454F; // Charcoal
-                            break;
-                        case 'emerald_ore':
-                            ModAPI.blocks[block].tint = 0x50C878; // Emerald green
-                            break;
-                        case 'redstone_ore':
-                            ModAPI.blocks[block].tint = 0xFF0000; // Red
-                            break;
-                        case 'lapis_ore':
-                            ModAPI.blocks[block].tint = 0x4169E1; // Royal blue
-                            break;
-                    }
+                    ModAPI.blocks[block].tint = getTint(block);
                 } else {
                     ModAPI.blocks[block].forceRender = false;
-                    ModAPI.blocks[block].tint = undefined; // Remove highlight
+                    ModAPI.blocks[block].tint = undefined;
                 }
                 ModAPI.blocks[block].reload();
             }
@@ -98,17 +123,31 @@
 
         ModAPI.reloadchunks();
         var activeTargets = targets.filter(target => targetStates[target]);
+        ModAPI.displayToChat({msg: activeTargets.length > 0 ? "X-ray Enabled!" : "X-ray Disabled!"});
+    }
+
+    function getTint(block) {
+        switch(block) {
+            case 'diamond_ore': return 0x00FFFF;
+            case 'gold_ore': return 0xFFD700;
+            case 'iron_ore': return 0xD3D3D3;
+            case 'coal_ore': return 0x36454F;
+            case 'emerald_ore': return 0x50C878;
+            case 'redstone_ore': return 0xFF0000;
+            case 'lapis_ore': return 0x4169E1;
+            default: return undefined;
+        }
     }
 
     mainButton.addEventListener('click', function() {
         menuVisible = !menuVisible;
-        menu.style.display = menuVisible ? 'block' : 'none';
+        menu.style.display = menuVisible ? 'flex' : 'none';
     });
 
     ModAPI.addEventListener("key", function(ev){
         if(ev.key == 16 && ev.shiftKey && !ev.ctrlKey && !ev.altKey){ // Right Shift key
             menuVisible = !menuVisible;
-            menu.style.display = menuVisible ? 'block' : 'none';
+            menu.style.display = menuVisible ? 'flex' : 'none';
         }
     });
 })();
