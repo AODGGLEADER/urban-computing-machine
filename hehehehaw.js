@@ -104,24 +104,36 @@
     `;
     document.head.appendChild(style);
 
+    function safeGetPlayerName(entity) {
+        try {
+            if (entity && entity.$getName && typeof entity.$getName === 'function') {
+                const nameObj = entity.$getName();
+                if (nameObj && nameObj.$characters && nameObj.$characters.data) {
+                    return decoder.decode(new Uint8Array(nameObj.$characters.data));
+                }
+            }
+        } catch (error) {
+            console.error("Error getting player name:", error);
+        }
+        return null;
+    }
+
     function updatePlayerList() {
-        if (Minecraft.$theWorld) {
+        if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities && Minecraft.$theWorld.$playerEntities.$array1) {
             playerList.innerHTML = "";
             listPseudos = [];
-            Minecraft.$theWorld.$playerEntities.$array1.data.forEach(entity => {
-                if (entity && entity.$getName && typeof entity.$getName === 'function') {
-                    let name = decoder.decode(new Uint8Array(entity.$getName().$characters.data));
-                    if (!listPseudos.includes(name)) {
-                        listPseudos.push(name);
-                    }
+            Minecraft.$theWorld.$playerEntities.$array1.forEach(entity => {
+                const name = safeGetPlayerName(entity);
+                if (name && !listPseudos.includes(name)) {
+                    listPseudos.push(name);
                 }
             });
             listPseudos.sort((a, b) => a.localeCompare(b));
             listPseudos.forEach(name => {
                 let li = document.createElement('li');
-                li.textContent = name + ((name === Minecraft.$thePlayer.$getName()) ? " (you)" : "");
+                li.textContent = name + ((name === safeGetPlayerName(Minecraft.$thePlayer)) ? " (you)" : "");
                 li.onclick = () => selectPlayer(name);
-                if (currentProfile && currentProfile.$getName() === name) {
+                if (currentProfile && safeGetPlayerName(currentProfile) === name) {
                     li.classList.add('selected');
                 }
                 playerList.appendChild(li);
@@ -130,9 +142,7 @@
     }
 
     function selectPlayer(name) {
-        currentProfile = Minecraft.$theWorld.$playerEntities.$array1.data.find(element => {
-            return element && element.$getName && typeof element.$getName === 'function' && decoder.decode(new Uint8Array(element.$getName().$characters.data)) === name;
-        });
+        currentProfile = Minecraft.$theWorld.$playerEntities.$array1.find(element => safeGetPlayerName(element) === name);
         if (currentProfile) {
             Minecraft.$renderViewEntity = currentProfile;
             if (currentProfile === Minecraft.$thePlayer) {
@@ -141,7 +151,7 @@
             } else {
                 Minecraft.$gameSettings.$hideGUI = 0;
             }
-            updatePlayerList(); // Refresh the list to show the new selection
+            updatePlayerList();
         }
     }
 
@@ -151,10 +161,14 @@
                 Minecraft.$renderViewEntity = currentProfile;
                 Minecraft.$thePlayer.$inventory.$markDirty();
             }
-            for (let i = 0; i < 36; i++) {
-                Minecraft.$thePlayer.$inventory.$mainInventory.$array1.data[i] = currentProfile.$inventory.$mainInventory.$array1.data[i];
+            if (currentProfile.$inventory && currentProfile.$inventory.$mainInventory && 
+                Minecraft.$thePlayer.$inventory && Minecraft.$thePlayer.$inventory.$mainInventory) {
+                for (let i = 0; i < 36; i++) {
+                    Minecraft.$thePlayer.$inventory.$mainInventory.$array1.data[i] = 
+                        currentProfile.$inventory.$mainInventory.$array1.data[i];
+                }
+                Minecraft.$thePlayer.$inventory.$currentItem = currentProfile.$inventory.$currentItem;
             }
-            Minecraft.$thePlayer.$inventory.$currentItem = currentProfile.$inventory.$currentItem;
         }
     }
 
@@ -164,13 +178,14 @@
         if (menuVisible) {
             updatePlayerList();
         }
-        console.log("Menu toggled. Visible:", menuVisible);
     }
 
     toggleButton.addEventListener('click', toggleMenu);
 
     ModAPI.addEventListener("frame", () => {
-        if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities.$array1.data.length > 1) {
+        if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities && 
+            Minecraft.$theWorld.$playerEntities.$array1 && 
+            Minecraft.$theWorld.$playerEntities.$array1.length > 1) {
             updateSpectatorView();
             toggleButton.style.display = 'flex';
         } else {
