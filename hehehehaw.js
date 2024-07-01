@@ -1,53 +1,86 @@
 (function() {
     let decoder = new TextDecoder();
     let listPseudos;
-    let isDragging = false;
-    let dragOffsetX, dragOffsetY;
+    let menuVisible = false;
+    let currentProfile = null;
 
-    // Create and style the select element
-    let select = document.createElement('select');
-    select.id = 'player-selector';
-    select.style.cssText = `
+    // Create menu container
+    let menu = document.createElement('div');
+    menu.id = 'player-selector-menu';
+    menu.style.cssText = `
         position: fixed;
-        top: 10px;
-        left: 10px;
-        padding: 8px 12px;
-        font-family: 'Minecraft', Arial, sans-serif;
-        font-size: 16px;
-        color: #ffffff;
-        background-color: rgba(0, 0, 0, 0.7);
+        top: 50px;
+        left: 50px;
+        width: 200px;
+        background-color: rgba(0, 0, 0, 0.8);
         border: 2px solid #4CAF50;
-        border-radius: 5px;
-        cursor: pointer;
-        outline: none;
+        border-radius: 10px;
+        padding: 10px;
+        font-family: 'Minecraft', Arial, sans-serif;
+        color: #ffffff;
+        display: none;
         z-index: 1000;
-        transition: all 0.3s ease;
     `;
 
-    // Create a style element for custom styles
+    // Create title
+    let title = document.createElement('div');
+    title.textContent = 'Player Selector';
+    title.style.cssText = `
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+        border-bottom: 1px solid #4CAF50;
+        padding-bottom: 5px;
+    `;
+    menu.appendChild(title);
+
+    // Create player list
+    let playerList = document.createElement('ul');
+    playerList.style.cssText = `
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        max-height: 300px;
+        overflow-y: auto;
+    `;
+    menu.appendChild(playerList);
+
+    // Create and append style element
     let style = document.createElement('style');
     style.textContent = `
         @font-face {
             font-family: 'Minecraft';
             src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft@master/fonts/minecraft.woff2') format('woff2');
         }
-        #player-selector option {
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #ffffff;
-            padding: 5px;
+        #player-selector-menu ul::-webkit-scrollbar {
+            width: 8px;
         }
-        #player-selector:hover {
-            background-color: rgba(0, 0, 0, 0.9);
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        #player-selector-menu ul::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        #player-selector-menu ul::-webkit-scrollbar-thumb {
+            background-color: #4CAF50;
+            border-radius: 4px;
+        }
+        #player-selector-menu li {
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #player-selector-menu li:hover {
+            background-color: rgba(76, 175, 80, 0.3);
+        }
+        #player-selector-menu li.selected {
+            background-color: rgba(76, 175, 80, 0.5);
         }
     `;
     document.head.appendChild(style);
 
-    select.addEventListener('mousedown', function (e) {
+    function updatePlayerList() {
         if (Minecraft.$theWorld) {
-            select.innerHTML = "";
+            playerList.innerHTML = "";
             listPseudos = [];
-            // Get all players in the server
             Minecraft.$theWorld.$playerEntities.$array1.data.forEach(entity => {
                 if (entity && entity.$getName && typeof entity.$getName === 'function') {
                     let name = decoder.decode(new Uint8Array(entity.$getName().$characters.data));
@@ -56,75 +89,82 @@
                     }
                 }
             });
-            listPseudos.sort((a, b) => a.localeCompare(b)); // Sort alphabetically
-            listPseudos.forEach(element => {
-                let option = document.createElement('option');
-                option.innerText = element + ((element === Minecraft.$thePlayer.$getName()) ? " (you)" : "");
-                option.value = element;
-                select.appendChild(option);
+            listPseudos.sort((a, b) => a.localeCompare(b));
+            listPseudos.forEach(name => {
+                let li = document.createElement('li');
+                li.textContent = name + ((name === Minecraft.$thePlayer.$getName()) ? " (you)" : "");
+                li.onclick = () => selectPlayer(name);
+                if (currentProfile && currentProfile.$getName() === name) {
+                    li.classList.add('selected');
+                }
+                playerList.appendChild(li);
             });
-            if (document.querySelector(`option[value="${Minecraft.$renderViewEntity.$getName()}"]`)) {
-                document.querySelector(`option[value="${Minecraft.$renderViewEntity.$getName()}"]`).selected = true;
-            }
         }
-    });
-
-    let lastRenderViewEntity = null;
-    function updateSpectatorView() {
-        if (profile && profile !== Minecraft.$thePlayer) {
-            if (Minecraft.$renderViewEntity !== profile) {
-                Minecraft.$renderViewEntity = profile;
-                // Force update of inventory
-                Minecraft.$thePlayer.$inventory.$markDirty();
-            }
-            // Copy inventory contents
-            for (let i = 0; i < 36; i++) {
-                Minecraft.$thePlayer.$inventory.$mainInventory.$array1.data[i] = profile.$inventory.$mainInventory.$array1.data[i];
-            }
-            // Update held item
-            Minecraft.$thePlayer.$inventory.$currentItem = profile.$inventory.$currentItem;
-        }
-        lastRenderViewEntity = Minecraft.$renderViewEntity;
     }
 
-    select.addEventListener('change', function (e) {
-        window.profile = Minecraft.$theWorld.$playerEntities.$array1.data.find(function (element) {
-            if (element && element.$getName && typeof element.$getName === 'function') {
-                return element.$getName() == select.value;
-            }
-            return false;
+    function selectPlayer(name) {
+        currentProfile = Minecraft.$theWorld.$playerEntities.$array1.data.find(element => {
+            return element && element.$getName && element.$getName() === name;
         });
-        if (profile) {
-            Minecraft.$renderViewEntity = profile;
-            if (profile === Minecraft.$thePlayer) {
+        if (currentProfile) {
+            Minecraft.$renderViewEntity = currentProfile;
+            if (currentProfile === Minecraft.$thePlayer) {
                 Minecraft.$gameSettings.$hideGUI = 0;
                 Minecraft.$thePlayer.$inventory.$markDirty();
             } else {
                 Minecraft.$gameSettings.$hideGUI = 0;
             }
+            updatePlayerList(); // Refresh the list to show the new selection
         }
-    });
+    }
+
+    function updateSpectatorView() {
+        if (currentProfile && currentProfile !== Minecraft.$thePlayer) {
+            if (Minecraft.$renderViewEntity !== currentProfile) {
+                Minecraft.$renderViewEntity = currentProfile;
+                Minecraft.$thePlayer.$inventory.$markDirty();
+            }
+            for (let i = 0; i < 36; i++) {
+                Minecraft.$thePlayer.$inventory.$mainInventory.$array1.data[i] = currentProfile.$inventory.$mainInventory.$array1.data[i];
+            }
+            Minecraft.$thePlayer.$inventory.$currentItem = currentProfile.$inventory.$currentItem;
+        }
+    }
+
+    function toggleMenu() {
+        menuVisible = !menuVisible;
+        menu.style.display = menuVisible ? 'block' : 'none';
+        if (menuVisible) {
+            updatePlayerList();
+        }
+    }
 
     ModAPI.addEventListener("frame", () => {
         if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities.$array1.data.length > 1) {
-            select.style.display = "block";
             updateSpectatorView();
-        } else {
-            select.style.display = "none";
         }
     });
 
-    // Make the selector draggable
-    select.addEventListener('mousedown', function(e) {
+    ModAPI.addEventListener("key", (event) => {
+        if (event.key === 187 && event.type === "keydown") { // 187 is the key code for "+"
+            toggleMenu();
+        }
+    });
+
+    // Make the menu draggable
+    let isDragging = false;
+    let dragOffsetX, dragOffsetY;
+
+    title.addEventListener('mousedown', function(e) {
         isDragging = true;
-        dragOffsetX = e.clientX - select.offsetLeft;
-        dragOffsetY = e.clientY - select.offsetTop;
+        dragOffsetX = e.clientX - menu.offsetLeft;
+        dragOffsetY = e.clientY - menu.offsetTop;
     });
 
     document.addEventListener('mousemove', function(e) {
         if (isDragging) {
-            select.style.left = (e.clientX - dragOffsetX) + 'px';
-            select.style.top = (e.clientY - dragOffsetY) + 'px';
+            menu.style.left = (e.clientX - dragOffsetX) + 'px';
+            menu.style.top = (e.clientY - dragOffsetY) + 'px';
         }
     });
 
@@ -132,5 +172,5 @@
         isDragging = false;
     });
 
-    document.body.appendChild(select);
+    document.body.appendChild(menu);
 })();
