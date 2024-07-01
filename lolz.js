@@ -1,8 +1,9 @@
-// Epic X-Ray Mod v3.4
+// Epic X-Ray Mod v4.1
 (function () {
     var menuVisible = false;
     var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
     var currentTheme = localStorage.getItem('xrayTheme') || 'default';
+    var miningStats = JSON.parse(localStorage.getItem('xrayMiningStats')) || {};
 
     // Inject custom CSS
     var style = document.createElement('style');
@@ -166,36 +167,41 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        .xray-settings-button {
+        .xray-settings-button, .xray-exit-button, .xray-stats-button {
             position: absolute;
-            top: 10px;
-            right: 50px;
-            font-size: 24px;
-            background: none;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
             border: none;
-            color: #fff;
-            cursor: pointer;
-        }
-        .xray-exit-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 24px;
-            background: none;
-            border: none;
-            color: #fff;
-            cursor: pointer;
-        }
-        .xray-settings-menu {
-            position: absolute;
-            top: 50px;
-            right: 10px;
-            background-color: #444;
-            padding: 10px;
             border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .xray-settings-button { top: 10px; right: 50px; }
+        .xray-exit-button { top: 10px; right: 10px; }
+        .xray-stats-button { bottom: 10px; right: 10px; }
+        .xray-settings-button:hover, .xray-exit-button:hover, .xray-stats-button:hover {
+            background-color: #45a049;
+        }
+        .xray-settings-menu, .xray-stats-panel {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            z-index: 10001;
             display: none;
         }
-        .xray-settings-menu button {
+        .xray-settings-menu { top: 50px; right: 10px; }
+        .xray-stats-panel {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .xray-settings-menu button, .xray-stats-content {
             display: block;
             width: 100%;
             padding: 5px;
@@ -209,22 +215,82 @@
         .xray-settings-menu button:hover {
             background-color: #666;
         }
-        
-        /* UwU Theme */
+        .xray-stats-content {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .xray-stat-item {
+            display: flex;
+            align-items: center;
+        }
+        .xray-stat-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            image-rendering: pixelated;
+        }
+
+        /* UwU Theme - Crazy Edition */
+        @keyframes rainbow-bg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        @keyframes wobble {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
         .uwu-theme {
-            background: linear-gradient(135deg, #FFB6C1, #FFC0CB) !important;
+            background: linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, #dd00f3, #dd00f3);
+            background-size: 1800% 1800%;
+            animation: rainbow-bg 18s ease infinite;
             font-family: 'Comic Sans MS', cursive !important;
+        }
+        .uwu-theme::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌈</text></svg>') 0 0 / 100px 100px;
+            opacity: 0.1;
+            animation: bounce 2s infinite;
         }
         .uwu-theme .xray-title {
             color: #FF69B4 !important;
-            text-shadow: 2px 2px 4px #FFF !important;
+            text-shadow: 2px 2px 4px #FFF, -2px -2px 4px #FFF, 2px -2px 4px #FFF, -2px 2px 4px #FFF !important;
+            animation: wobble 2s infinite;
         }
         .uwu-theme .xray-search,
         .uwu-theme .xray-ore-label,
-        .uwu-theme .xray-add-button {
-            background-color: rgba(255, 182, 193, 0.5) !important;
+        .uwu-theme .xray-add-button,
+        .uwu-theme .xray-settings-button,
+        .uwu-theme .xray-exit-button,
+        .uwu-theme .xray-stats-button {
+            background-color: rgba(255, 182, 193, 0.7) !important;
             color: #FF1493 !important;
-            border: 2px solid #FF69B4 !important;
+            border: 3px solid #FF69B4 !important;
+            box-shadow: 0 0 10px #FF69B4, 0 0 20px #FF69B4, 0 0 30px #FF69B4;
+            transition: all 0.3s ease;
+        }
+        .uwu-theme .xray-search:focus,
+        .uwu-theme .xray-ore-label:hover,
+        .uwu-theme .xray-add-button:hover,
+        .uwu-theme .xray-settings-button:hover,
+        .uwu-theme .xray-exit-button:hover,
+        .uwu-theme .xray-stats-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #FF69B4, 0 0 30px #FF69B4, 0 0 45px #FF69B4;
         }
         .uwu-theme .xray-checkbox {
             border-color: #FF69B4 !important;
@@ -232,20 +298,43 @@
         .uwu-theme .xray-checkbox:checked {
             background-color: #FF69B4 !important;
         }
-        .uwu-theme .xray-settings-button,
-        .uwu-theme .xray-exit-button {
-            color: #FF1493 !important;
+        .uwu-theme .xray-checkbox:checked::before {
+            content: '💖';
+            font-size: 16px;
         }
-        .uwu-theme .xray-settings-menu {
-            background-color: #FFC0CB !important;
+        .uwu-theme .xray-settings-menu,
+        .uwu-theme .xray-stats-panel {
+            background-color: rgba(255, 192, 203, 0.9) !important;
+            border: 3px solid #FF69B4;
+            box-shadow: 0 0 20px #FF69B4;
         }
-        .uwu-theme .xray-settings-menu button {
+        .uwu-theme .xray-settings-menu button,
+        .uwu-theme .xray-stats-content {
             background-color: #FFB6C1 !important;
             color: #FF1493 !important;
+            border: 2px solid #FF69B4;
+            transition: all 0.3s ease;
         }
         .uwu-theme .xray-settings-menu button:hover {
             background-color: #FF69B4 !important;
             color: #FFF !important;
+            transform: scale(1.1);
+        }
+        .uwu-theme .xray-color-circle {
+            animation: sparkle 1.5s infinite;
+        }
+        .uwu-theme .xray-ore-container {
+            animation: bounce 4s infinite;
+        }
+        .uwu-theme::after {
+            content: "UwU";
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: #FF69B4;
+            text-shadow: 2px 2px 4px #FFF;
+            animation: wobble 3s infinite;
         }
     `;
     document.head.appendChild(style);
@@ -272,8 +361,13 @@
         <button class="xray-add-button">Add Block</button>
         <button class="xray-settings-button">⚙️</button>
         <button class="xray-exit-button">❌</button>
+        <button class="xray-stats-button">📊 Stats</button>
         <div class="xray-settings-menu">
             <button class="xray-theme-toggle">Toggle UwU Theme</button>
+        </div>
+        <div class="xray-stats-panel">
+            <h2>Mining Statistics</h2>
+            <div class="xray-stats-content"></div>
         </div>
     `;
 
@@ -282,10 +376,13 @@
     var addButton = menuContainer.querySelector('.xray-add-button');
     var settingsButton = menuContainer.querySelector('.xray-settings-button');
     var exitButton = menuContainer.querySelector('.xray-exit-button');
+    var statsButton = menuContainer.querySelector('.xray-stats-button');
     var settingsMenu = menuContainer.querySelector('.xray-settings-menu');
     var themeToggle = menuContainer.querySelector('.xray-theme-toggle');
+    var statsPanel = menuContainer.querySelector('.xray-stats-panel');
+    var statsContent = statsPanel.querySelector('.xray-stats-content');
 
-    function createBlockElement(textureName, customName, color) {
+    function createBlockElement(textureName, customName, color, enabled) {
         var label = document.createElement('label');
         label.className = 'xray-ore-label';
         label.setAttribute('data-texture', textureName);
@@ -293,6 +390,7 @@
         var checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'xray-checkbox';
+        checkbox.checked = enabled;
 
         var colorCircle = document.createElement('div');
         colorCircle.className = 'xray-color-circle';
@@ -332,6 +430,7 @@
     }
 
     function updateBlock(textureName, enabled, color) {
+        console.log(`Updating ${textureName}: enabled=${enabled}, color=${color}`);
         if (enabled) {
             ModAPI.blocks[textureName].forceRender = true;
             ModAPI.blocks[textureName].tint = hexToRgb(color);
@@ -344,7 +443,11 @@
         ModAPI.blocks[textureName].reload();
         ModAPI.reloadchunks();
 
-        customBlocks[textureName] = { customName: customBlocks[textureName]?.customName, color: color };
+        customBlocks[textureName] = { 
+            customName: customBlocks[textureName]?.customName || textureName, 
+            color: color,
+            enabled: enabled
+        };
         localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
     }
 
@@ -354,7 +457,11 @@
             var newCustomName = prompt('Enter a new custom name:', customName);
             var newColor = prompt('Enter a new color:', color);
             if (newCustomName && newColor) {
-                customBlocks[textureName] = { customName: newCustomName, color: newColor };
+                customBlocks[textureName] = { 
+                    customName: newCustomName, 
+                    color: newColor,
+                    enabled: customBlocks[textureName]?.enabled || false
+                };
                 localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
                 refreshBlocks();
             }
@@ -368,7 +475,14 @@
     function refreshBlocks() {
         oreContainer.innerHTML = '';
         Object.entries(customBlocks).forEach(([textureName, blockInfo]) => {
-            oreContainer.appendChild(createBlockElement(textureName, blockInfo.customName, blockInfo.color));
+            oreContainer.appendChild(createBlockElement(
+                textureName, 
+                blockInfo.customName, 
+                blockInfo.color,
+                blockInfo.enabled
+            ));
+            // Ensure the block's state is updated in the game
+            updateBlock(textureName, blockInfo.enabled, blockInfo.color);
         });
     }
 
@@ -378,14 +492,18 @@
             var customName = prompt('Enter a custom name for this block:');
             var color = prompt('Enter a color for this block (e.g., #FF0000):');
             if (customName && color) {
-                customBlocks[textureName] = { customName: customName, color: color };
+                customBlocks[textureName] = { 
+                    customName: customName, 
+                    color: color,
+                    enabled: false
+                };
                 localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
                 refreshBlocks();
             }
         }
     });
 
-        searchInput.addEventListener('input', function() {
+    searchInput.addEventListener('input', function() {
         var searchTerm = this.value.toLowerCase();
         Array.from(oreContainer.children).forEach(function(label) {
             var blockName = label.textContent.toLowerCase();
@@ -405,7 +523,7 @@
 
     var tooltipTimeout;
     function showTooltip(event, text) {
-        hideTooltip(); // Clear any existing tooltip
+        hideTooltip();
         var tooltip = document.createElement('div');
         tooltip.className = 'xray-tooltip';
         tooltip.textContent = text;
@@ -417,7 +535,7 @@
 
         setTimeout(() => tooltip.style.opacity = 1, 0);
 
-        tooltipTimeout = setTimeout(hideTooltip, 2000); // Hide tooltip after 2 seconds
+        tooltipTimeout = setTimeout(hideTooltip, 2000);
     }
 
     function hideTooltip() {
@@ -434,18 +552,21 @@
         menu.style.display = menuVisible ? 'flex' : 'none';
         if (menuVisible) {
             menuContainer.style.animation = 'none';
-            menuContainer.offsetHeight; // Trigger reflow
+            menuContainer.offsetHeight;
             menuContainer.style.animation = null;
             refreshBlocks();
-            // Focus on search input and select all text
             searchInput.focus();
             searchInput.select();
+        } else {
+            // When closing the menu, ensure all blocks are in their correct state
+            Object.entries(customBlocks).forEach(([textureName, blockInfo]) => {
+                updateBlock(textureName, blockInfo.enabled, blockInfo.color);
+            });
         }
     }
 
     mainButton.addEventListener('click', toggleMenu);
 
-    // Prevent chat interference
     searchInput.addEventListener('focus', function(e) {
         e.stopPropagation();
     });
@@ -454,16 +575,13 @@
         e.stopPropagation();
     });
 
-    // Settings button functionality
     settingsButton.addEventListener('click', function(e) {
         e.stopPropagation();
         settingsMenu.style.display = settingsMenu.style.display === 'block' ? 'none' : 'block';
     });
 
-    // Exit button functionality
     exitButton.addEventListener('click', toggleMenu);
 
-    // Theme toggle functionality
     themeToggle.addEventListener('click', function() {
         currentTheme = currentTheme === 'default' ? 'uwu' : 'default';
         localStorage.setItem('xrayTheme', currentTheme);
@@ -478,133 +596,57 @@
         }
     }
 
-       style.textContent += `
-        /* UwU Theme - Crazy Edition */
-        @keyframes rainbow-bg {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+    // Statistics tracking
+    var trackedOres = [
+        'stone', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 
+        'lapis_ore', 'redstone_ore', 'emerald_ore', 'nether_quartz_ore'
+    ];
 
-        @keyframes sparkle {
-            0%, 100% { opacity: 0; transform: scale(0.5); }
-            50% { opacity: 1; transform: scale(1.2); }
+    trackedOres.forEach(ore => {
+        if (!(ore in miningStats)) {
+            miningStats[ore] = 0;
         }
+    });
 
-        @keyframes wobble {
-            0%, 100% { transform: rotate(-3deg); }
-            50% { transform: rotate(3deg); }
+    function updateStats(blockName) {
+        if (trackedOres.includes(blockName)) {
+            miningStats[blockName]++;
+            localStorage.setItem('xrayMiningStats', JSON.stringify(miningStats));
         }
+    }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+    function displayStats() {
+        statsContent.innerHTML = '';
+        trackedOres.forEach(ore => {
+            statsContent.innerHTML += `
+                <div class="xray-stat-item">
+                    <img src="textures/blocks/${ore}.png" class="xray-stat-icon" alt="${ore}">
+                    <span>${ore.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}: ${miningStats[ore]}</span>
+                </div>
+            `;
+        });
+    }
+
+    statsButton.addEventListener('click', function() {
+        statsPanel.style.display = statsPanel.style.display === 'none' ? 'block' : 'none';
+        if (statsPanel.style.display === 'block') {
+            displayStats();
         }
+    });
 
-        .uwu-theme {
-            background: linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, #dd00f3, #dd00f3);
-            background-size: 1800% 1800%;
-            animation: rainbow-bg 18s ease infinite;
-            font-family: 'Comic Sans MS', cursive !important;
+    document.addEventListener('click', function(event) {
+        if (!statsPanel.contains(event.target) && event.target !== statsButton) {
+            statsPanel.style.display = 'none';
         }
+    });
 
-        .uwu-theme::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌈</text></svg>') 0 0 / 100px 100px;
-            opacity: 0.1;
-            animation: bounce 2s infinite;
-        }
+    ModAPI.addEventListener("blockBreak", function(event) {
+        updateStats(event.block.name);
+    });
 
-        .uwu-theme .xray-title {
-            color: #FF69B4 !important;
-            text-shadow: 2px 2px 4px #FFF, -2px -2px 4px #FFF, 2px -2px 4px #FFF, -2px 2px 4px #FFF !important;
-            animation: wobble 2s infinite;
-        }
-
-        .uwu-theme .xray-search,
-        .uwu-theme .xray-ore-label,
-        .uwu-theme .xray-add-button {
-            background-color: rgba(255, 182, 193, 0.7) !important;
-            color: #FF1493 !important;
-            border: 3px solid #FF69B4 !important;
-            box-shadow: 0 0 10px #FF69B4, 0 0 20px #FF69B4, 0 0 30px #FF69B4;
-            transition: all 0.3s ease;
-        }
-
-        .uwu-theme .xray-search:focus,
-        .uwu-theme .xray-ore-label:hover,
-        .uwu-theme .xray-add-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #FF69B4, 0 0 30px #FF69B4, 0 0 45px #FF69B4;
-        }
-
-        .uwu-theme .xray-checkbox {
-            border-color: #FF69B4 !important;
-        }
-
-        .uwu-theme .xray-checkbox:checked {
-            background-color: #FF69B4 !important;
-        }
-
-        .uwu-theme .xray-checkbox:checked::before {
-            content: '💖';
-            font-size: 16px;
-        }
-
-        .uwu-theme .xray-settings-button,
-        .uwu-theme .xray-exit-button {
-            color: #FF1493 !important;
-            font-size: 32px;
-            text-shadow: 0 0 10px #FF69B4;
-        }
-
-        .uwu-theme .xray-settings-menu {
-            background-color: rgba(255, 192, 203, 0.9) !important;
-            border: 3px solid #FF69B4;
-            box-shadow: 0 0 20px #FF69B4;
-        }
-
-        .uwu-theme .xray-settings-menu button {
-            background-color: #FFB6C1 !important;
-            color: #FF1493 !important;
-            border: 2px solid #FF69B4;
-            transition: all 0.3s ease;
-        }
-
-        .uwu-theme .xray-settings-menu button:hover {
-            background-color: #FF69B4 !important;
-            color: #FFF !important;
-            transform: scale(1.1);
-        }
-
-        .uwu-theme .xray-color-circle {
-            animation: sparkle 1.5s infinite;
-        }
-
-        .uwu-theme .xray-ore-container {
-            animation: bounce 4s infinite;
-        }
-
-        .uwu-theme::after {
-            content: "UwU";
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 24px;
-            color: #FF69B4;
-            text-shadow: 2px 2px 4px #FFF;
-            animation: wobble 3s infinite;
-        }
-    `;
-    
-    // Initial theme application
-    applyTheme();
-
-    // Initial load of custom blocks
-    refreshBlocks();
+    // Initial setup
+    (function initializeXRay() {
+        applyTheme();
+        refreshBlocks();
+    })();
 })();
