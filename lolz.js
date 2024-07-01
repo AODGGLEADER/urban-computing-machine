@@ -98,7 +98,6 @@
 
         ModAPI.reloadchunks();
         var activeTargets = targets.filter(target => targetStates[target]);
-        ModAPI.displayToChat({msg: activeTargets.length > 0 ? "X-ray Enabled!" : "X-ray Disabled!"});
     }
 
     mainButton.addEventListener('click', function() {
