@@ -121,18 +121,18 @@
         var activeTargets = targets.filter(function(target) { return targetStates[target]; });
     }
 
-    function getTint(block) {
-        switch(block) {
-            case 'diamond_ore' return 0x00FFFF;
-            case 'gold_ore' return 0xFFD700;
-            case 'iron_ore' return 0xD3D3D3;
-            case 'coal_ore' return 0x36454F;
-            case 'emerald_ore' return 0x50C878;
-            case 'redstone_ore' return 0xFF0000;
-            case 'lapis_ore' return 0x4169E1;
-            default return undefined;
-        }
+function getTint(block) {
+    switch(block) {
+        case 'diamond_ore': return 0x00FFFF;
+        case 'gold_ore': return 0xFFD700;
+        case 'iron_ore': return 0xD3D3D3;
+        case 'coal_ore': return 0x36454F;
+        case 'emerald_ore': return 0x50C878;
+        case 'redstone_ore': return 0xFF0000;
+        case 'lapis_ore': return 0x4169E1;
+        default: return undefined;
     }
+}
 
     mainButton.addEventListener('click', function() {
         menuVisible = !menuVisible;
