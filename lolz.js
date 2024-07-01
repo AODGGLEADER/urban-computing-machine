@@ -4,7 +4,7 @@
     var menuVisible = false;
     var targets = ["diamond_ore", "gold_ore", "iron_ore", "coal_ore", "emerald_ore", "redstone_ore", "lapis_ore"];
     var targetStates = {};
-    targets.forEach(target => targetStates[target] = false);
+    targets.forEach(function(target) { targetStates[target] = false; });
 
     // Create main button
     var mainButton = document.createElement('button');
@@ -49,7 +49,7 @@
     menu.appendChild(menuContainer);
 
     var menuHeader = document.createElement('div');
-    menuHeader.innerHTML = '<h1 style="color: #fff; font-size: 32px; margin-bottom: 20px;">X-Ray Menu</h1>';
+    menuHeader.innerHTML = '<h1 style="color #fff; font-size 32px; margin-bottom 20px;">X-Ray Menu</h1>';
     menuContainer.appendChild(menuHeader);
 
     // Create search input
@@ -68,7 +68,7 @@
     menuContainer.appendChild(oreContainer);
 
     // Create checkboxes for each target
-    targets.forEach(target => {
+    targets.forEach(function(target) {
         var label = document.createElement('label');
         label.style.display = 'block';
         label.style.marginBottom = '10px';
@@ -95,20 +95,16 @@
     // Add search functionality
     searchInput.addEventListener('input', function() {
         var searchTerm = this.value.toLowerCase();
-        Array.from(oreContainer.children).forEach(label => {
+        Array.from(oreContainer.children).forEach(function(label) {
             var oreText = label.textContent.toLowerCase();
-            if (oreText.includes(searchTerm)) {
-                label.style.display = 'block';
-            } else {
-                label.style.display = 'none';
-            }
+            label.style.display = oreText.includes(searchTerm) ? 'block' : 'none';
         });
     });
 
     function update() {
         var allblocks = Object.keys(ModAPI.blocks);
 
-        allblocks.forEach(block => {
+        allblocks.forEach(function(block) {
             if (targets.includes(block)) {
                 if (targetStates[block]) {
                     ModAPI.blocks[block].forceRender = true;
@@ -122,20 +118,19 @@
         });
 
         ModAPI.reloadchunks();
-        var activeTargets = targets.filter(target => targetStates[target]);
-        ModAPI.displayToChat({msg: activeTargets.length > 0 ? "X-ray Enabled!" : "X-ray Disabled!"});
+        var activeTargets = targets.filter(function(target) { return targetStates[target]; });
     }
 
     function getTint(block) {
         switch(block) {
-            case 'diamond_ore': return 0x00FFFF;
-            case 'gold_ore': return 0xFFD700;
-            case 'iron_ore': return 0xD3D3D3;
-            case 'coal_ore': return 0x36454F;
-            case 'emerald_ore': return 0x50C878;
-            case 'redstone_ore': return 0xFF0000;
-            case 'lapis_ore': return 0x4169E1;
-            default: return undefined;
+            case 'diamond_ore' return 0x00FFFF;
+            case 'gold_ore' return 0xFFD700;
+            case 'iron_ore' return 0xD3D3D3;
+            case 'coal_ore' return 0x36454F;
+            case 'emerald_ore' return 0x50C878;
+            case 'redstone_ore' return 0xFF0000;
+            case 'lapis_ore' return 0x4169E1;
+            default return undefined;
         }
     }
 
