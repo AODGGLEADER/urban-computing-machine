@@ -1,7 +1,8 @@
-// Epic X-Ray Mod v3.3
+// Epic X-Ray Mod v3.4
 (function () {
     var menuVisible = false;
     var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
+    var currentTheme = localStorage.getItem('xrayTheme') || 'default';
 
     // Inject custom CSS
     var style = document.createElement('style');
@@ -56,6 +57,7 @@
             overflow-y: auto;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             animation: slideIn 0.5s ease-out;
+            position: relative;
         }
         @keyframes slideIn {
             from { transform: translateY(-50px); opacity: 0; }
@@ -164,6 +166,87 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
+        .xray-settings-button {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
+        .xray-exit-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
+        .xray-settings-menu {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background-color: #444;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .xray-settings-menu button {
+            display: block;
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 5px;
+            background-color: #555;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .xray-settings-menu button:hover {
+            background-color: #666;
+        }
+        
+        /* UwU Theme */
+        .uwu-theme {
+            background: linear-gradient(135deg, #FFB6C1, #FFC0CB) !important;
+            font-family: 'Comic Sans MS', cursive !important;
+        }
+        .uwu-theme .xray-title {
+            color: #FF69B4 !important;
+            text-shadow: 2px 2px 4px #FFF !important;
+        }
+        .uwu-theme .xray-search,
+        .uwu-theme .xray-ore-label,
+        .uwu-theme .xray-add-button {
+            background-color: rgba(255, 182, 193, 0.5) !important;
+            color: #FF1493 !important;
+            border: 2px solid #FF69B4 !important;
+        }
+        .uwu-theme .xray-checkbox {
+            border-color: #FF69B4 !important;
+        }
+        .uwu-theme .xray-checkbox:checked {
+            background-color: #FF69B4 !important;
+        }
+        .uwu-theme .xray-settings-button,
+        .uwu-theme .xray-exit-button {
+            color: #FF1493 !important;
+        }
+        .uwu-theme .xray-settings-menu {
+            background-color: #FFC0CB !important;
+        }
+        .uwu-theme .xray-settings-menu button {
+            background-color: #FFB6C1 !important;
+            color: #FF1493 !important;
+        }
+        .uwu-theme .xray-settings-menu button:hover {
+            background-color: #FF69B4 !important;
+            color: #FFF !important;
+        }
     `;
     document.head.appendChild(style);
 
@@ -187,11 +270,20 @@
         <input type="text" placeholder="Search blocks..." class="xray-search">
         <div class="xray-ore-container"></div>
         <button class="xray-add-button">Add Block</button>
+        <button class="xray-settings-button">⚙️</button>
+        <button class="xray-exit-button">❌</button>
+        <div class="xray-settings-menu">
+            <button class="xray-theme-toggle">Toggle UwU Theme</button>
+        </div>
     `;
 
     var searchInput = menuContainer.querySelector('.xray-search');
     var oreContainer = menuContainer.querySelector('.xray-ore-container');
     var addButton = menuContainer.querySelector('.xray-add-button');
+    var settingsButton = menuContainer.querySelector('.xray-settings-button');
+    var exitButton = menuContainer.querySelector('.xray-exit-button');
+    var settingsMenu = menuContainer.querySelector('.xray-settings-menu');
+    var themeToggle = menuContainer.querySelector('.xray-theme-toggle');
 
     function createBlockElement(textureName, customName, color) {
         var label = document.createElement('label');
@@ -293,7 +385,7 @@
         }
     });
 
-    searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function() {
         var searchTerm = this.value.toLowerCase();
         Array.from(oreContainer.children).forEach(function(label) {
             var blockName = label.textContent.toLowerCase();
@@ -361,6 +453,157 @@
     searchInput.addEventListener('keydown', function(e) {
         e.stopPropagation();
     });
+
+    // Settings button functionality
+    settingsButton.addEventListener('click', function(e) {
+        e.stopPropagation();
+        settingsMenu.style.display = settingsMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Exit button functionality
+    exitButton.addEventListener('click', toggleMenu);
+
+    // Theme toggle functionality
+    themeToggle.addEventListener('click', function() {
+        currentTheme = currentTheme === 'default' ? 'uwu' : 'default';
+        localStorage.setItem('xrayTheme', currentTheme);
+        applyTheme();
+    });
+
+    function applyTheme() {
+        if (currentTheme === 'uwu') {
+            menuContainer.classList.add('uwu-theme');
+        } else {
+            menuContainer.classList.remove('uwu-theme');
+        }
+    }
+
+       style.textContent += `
+        /* UwU Theme - Crazy Edition */
+        @keyframes rainbow-bg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        @keyframes wobble {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .uwu-theme {
+            background: linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, #dd00f3, #dd00f3);
+            background-size: 1800% 1800%;
+            animation: rainbow-bg 18s ease infinite;
+            font-family: 'Comic Sans MS', cursive !important;
+        }
+
+        .uwu-theme::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌈</text></svg>') 0 0 / 100px 100px;
+            opacity: 0.1;
+            animation: bounce 2s infinite;
+        }
+
+        .uwu-theme .xray-title {
+            color: #FF69B4 !important;
+            text-shadow: 2px 2px 4px #FFF, -2px -2px 4px #FFF, 2px -2px 4px #FFF, -2px 2px 4px #FFF !important;
+            animation: wobble 2s infinite;
+        }
+
+        .uwu-theme .xray-search,
+        .uwu-theme .xray-ore-label,
+        .uwu-theme .xray-add-button {
+            background-color: rgba(255, 182, 193, 0.7) !important;
+            color: #FF1493 !important;
+            border: 3px solid #FF69B4 !important;
+            box-shadow: 0 0 10px #FF69B4, 0 0 20px #FF69B4, 0 0 30px #FF69B4;
+            transition: all 0.3s ease;
+        }
+
+        .uwu-theme .xray-search:focus,
+        .uwu-theme .xray-ore-label:hover,
+        .uwu-theme .xray-add-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #FF69B4, 0 0 30px #FF69B4, 0 0 45px #FF69B4;
+        }
+
+        .uwu-theme .xray-checkbox {
+            border-color: #FF69B4 !important;
+        }
+
+        .uwu-theme .xray-checkbox:checked {
+            background-color: #FF69B4 !important;
+        }
+
+        .uwu-theme .xray-checkbox:checked::before {
+            content: '💖';
+            font-size: 16px;
+        }
+
+        .uwu-theme .xray-settings-button,
+        .uwu-theme .xray-exit-button {
+            color: #FF1493 !important;
+            font-size: 32px;
+            text-shadow: 0 0 10px #FF69B4;
+        }
+
+        .uwu-theme .xray-settings-menu {
+            background-color: rgba(255, 192, 203, 0.9) !important;
+            border: 3px solid #FF69B4;
+            box-shadow: 0 0 20px #FF69B4;
+        }
+
+        .uwu-theme .xray-settings-menu button {
+            background-color: #FFB6C1 !important;
+            color: #FF1493 !important;
+            border: 2px solid #FF69B4;
+            transition: all 0.3s ease;
+        }
+
+        .uwu-theme .xray-settings-menu button:hover {
+            background-color: #FF69B4 !important;
+            color: #FFF !important;
+            transform: scale(1.1);
+        }
+
+        .uwu-theme .xray-color-circle {
+            animation: sparkle 1.5s infinite;
+        }
+
+        .uwu-theme .xray-ore-container {
+            animation: bounce 4s infinite;
+        }
+
+        .uwu-theme::after {
+            content: "UwU";
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: #FF69B4;
+            text-shadow: 2px 2px 4px #FFF;
+            animation: wobble 3s infinite;
+        }
+    `;
+    
+    // Initial theme application
+    applyTheme();
 
     // Initial load of custom blocks
     refreshBlocks();
