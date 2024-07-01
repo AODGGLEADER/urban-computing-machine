@@ -1,4 +1,4 @@
-// Epic X-Ray Mod v3.1
+// Epic X-Ray Mod v3.2
 (function () {
     var menuVisible = false;
     var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
@@ -8,6 +8,28 @@
     style.textContent = `
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
         
+        .xray-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #007bff, #00bcd4);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 10000;
+        }
+        .xray-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
         .xray-menu {
             position: fixed;
             top: 0;
@@ -144,6 +166,12 @@
         }
     `;
     document.head.appendChild(style);
+
+    // Create main button
+    var mainButton = document.createElement('button');
+    mainButton.textContent = 'X-Ray';
+    mainButton.className = 'xray-button';
+    document.body.appendChild(mainButton);
 
     // Create menu
     var menu = document.createElement('div');
@@ -302,13 +330,6 @@
         }
     }
 
-    ModAPI.addEventListener("key", function(ev){
-        if(ev.key == 16){ // 16 is the key code for Shift
-            toggleMenu();
-            ev.preventDefault();
-        }
-    });
-
     function toggleMenu() {
         menuVisible = !menuVisible;
         menu.style.display = menuVisible ? 'flex' : 'none';
@@ -319,6 +340,8 @@
             refreshBlocks();
         }
     }
+
+    mainButton.addEventListener('click', toggleMenu);
 
     // Initial load of custom blocks
     refreshBlocks();
