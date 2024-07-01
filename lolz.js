@@ -1,4 +1,4 @@
-// Epic X-Ray Mod v3.2
+// Epic X-Ray Mod v3.3
 (function () {
     var menuVisible = false;
     var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
@@ -40,7 +40,7 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 100000;
             backdrop-filter: blur(5px);
         }
         .xray-container {
@@ -153,13 +153,13 @@
             background-color: #45a049;
         }
         .xray-tooltip {
-            position: absolute;
+            position: fixed;
             background-color: #333;
             color: #fff;
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 12px;
-            z-index: 1000;
+            z-index: 1000000;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s;
@@ -243,9 +243,11 @@
         if (enabled) {
             ModAPI.blocks[textureName].forceRender = true;
             ModAPI.blocks[textureName].tint = hexToRgb(color);
+            ModAPI.blocks[textureName].renderType = "TRANSLUCENT";
         } else {
             ModAPI.blocks[textureName].forceRender = false;
             ModAPI.blocks[textureName].tint = undefined;
+            ModAPI.blocks[textureName].renderType = "SOLID";
         }
         ModAPI.blocks[textureName].reload();
         ModAPI.reloadchunks();
@@ -309,7 +311,9 @@
         } : null;
     }
 
+    var tooltipTimeout;
     function showTooltip(event, text) {
+        hideTooltip(); // Clear any existing tooltip
         var tooltip = document.createElement('div');
         tooltip.className = 'xray-tooltip';
         tooltip.textContent = text;
@@ -320,9 +324,12 @@
         tooltip.style.top = (rect.bottom + 5) + 'px';
 
         setTimeout(() => tooltip.style.opacity = 1, 0);
+
+        tooltipTimeout = setTimeout(hideTooltip, 2000); // Hide tooltip after 2 seconds
     }
 
     function hideTooltip() {
+        clearTimeout(tooltipTimeout);
         var tooltip = document.querySelector('.xray-tooltip');
         if (tooltip) {
             tooltip.style.opacity = 0;
@@ -338,10 +345,22 @@
             menuContainer.offsetHeight; // Trigger reflow
             menuContainer.style.animation = null;
             refreshBlocks();
+            // Focus on search input and select all text
+            searchInput.focus();
+            searchInput.select();
         }
     }
 
     mainButton.addEventListener('click', toggleMenu);
+
+    // Prevent chat interference
+    searchInput.addEventListener('focus', function(e) {
+        e.stopPropagation();
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        e.stopPropagation();
+    });
 
     // Initial load of custom blocks
     refreshBlocks();
