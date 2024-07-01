@@ -1,3 +1,5 @@
+// Coalest xray mod to ever exist!
+
 (function () {
     var menuVisible = false;
     var targets = ["diamond_ore", "gold_ore", "iron_ore", "coal_ore", "emerald_ore", "redstone_ore", "lapis_ore"];
@@ -30,74 +32,72 @@
     menu.style.display = 'none';
     document.body.appendChild(menu);
 
-    // Create buttons for each target
+    // Create checkboxes for each target
     targets.forEach(target => {
-        var button = document.createElement('button');
-        button.textContent = target.replace('_ore', '').toUpperCase();
-        button.style.display = 'block';
-        button.style.width = '100%';
-        button.style.padding = '10px';
-        button.style.marginBottom = '5px';
-        button.style.backgroundColor = '#f44336';
-        button.style.color = '#fff';
-        button.style.border = 'none';
-        button.style.borderRadius = '3px';
-        button.style.cursor = 'pointer';
-        button.style.fontFamily = 'Arial, sans-serif';
+        var label = document.createElement('label');
+        label.style.display = 'block';
+        label.style.marginBottom = '5px';
+        label.style.color = '#fff';
+        label.style.fontFamily = 'Arial, sans-serif';
 
-        button.addEventListener('click', function() {
-            targetStates[target] = !targetStates[target];
-            this.style.backgroundColor = targetStates[target] ? '#4CAF50' : '#f44336';
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.style.marginRight = '5px';
+
+        var text = document.createTextNode(target.replace('_ore', '').toUpperCase());
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+
+        checkbox.addEventListener('change', function() {
+            targetStates[target] = this.checked;
             update();
         });
 
-        menu.appendChild(button);
+        menu.appendChild(label);
     });
-
-    // Create "Toggle All" button
-    var toggleAllButton = document.createElement('button');
-    toggleAllButton.textContent = 'Toggle All';
-    toggleAllButton.style.display = 'block';
-    toggleAllButton.style.width = '100%';
-    toggleAllButton.style.padding = '10px';
-    toggleAllButton.style.marginTop = '10px';
-    toggleAllButton.style.backgroundColor = '#2196F3';
-    toggleAllButton.style.color = '#fff';
-    toggleAllButton.style.border = 'none';
-    toggleAllButton.style.borderRadius = '3px';
-    toggleAllButton.style.cursor = 'pointer';
-    toggleAllButton.style.fontFamily = 'Arial, sans-serif';
-
-    toggleAllButton.addEventListener('click', function() {
-        var allEnabled = targets.every(target => targetStates[target]);
-        targets.forEach(target => {
-            targetStates[target] = !allEnabled;
-            menu.childNodes.forEach(button => {
-                if (button.textContent === target.replace('_ore', '').toUpperCase()) {
-                    button.style.backgroundColor = targetStates[target] ? '#4CAF50' : '#f44336';
-                }
-            });
-        });
-        update();
-    });
-
-    menu.appendChild(toggleAllButton);
 
     function update() {
-        var activeTargets = targets.filter(target => targetStates[target]);
         var allblocks = Object.keys(ModAPI.blocks);
 
         allblocks.forEach(block => {
-            if (activeTargets.includes(block)) {
-                ModAPI.blocks[block].forceRender = true;
-                ModAPI.blocks[block].reload();
-            } else if (ModAPI.blocks[block] && ("noRender" in ModAPI.blocks[block])) {
-                ModAPI.blocks[block].noRender = !activeTargets.includes(block);
+            if (targets.includes(block)) {
+                if (targetStates[block]) {
+                    ModAPI.blocks[block].forceRender = true;
+                    // Add highlight
+                    switch(block) {
+                        case 'diamond_ore':
+                            ModAPI.blocks[block].tint = 0x00FFFF; // Light blue
+                            break;
+                        case 'gold_ore':
+                            ModAPI.blocks[block].tint = 0xFFD700; // Gold
+                            break;
+                        case 'iron_ore':
+                            ModAPI.blocks[block].tint = 0xD3D3D3; // Light gray
+                            break;
+                        case 'coal_ore':
+                            ModAPI.blocks[block].tint = 0x36454F; // Charcoal
+                            break;
+                        case 'emerald_ore':
+                            ModAPI.blocks[block].tint = 0x50C878; // Emerald green
+                            break;
+                        case 'redstone_ore':
+                            ModAPI.blocks[block].tint = 0xFF0000; // Red
+                            break;
+                        case 'lapis_ore':
+                            ModAPI.blocks[block].tint = 0x4169E1; // Royal blue
+                            break;
+                    }
+                } else {
+                    ModAPI.blocks[block].forceRender = false;
+                    ModAPI.blocks[block].tint = undefined; // Remove highlight
+                }
                 ModAPI.blocks[block].reload();
             }
         });
 
         ModAPI.reloadchunks();
+        var activeTargets = targets.filter(target => targetStates[target]);
         ModAPI.displayToChat({msg: activeTargets.length > 0 ? "X-ray Enabled!" : "X-ray Disabled!"});
     }
 
