@@ -160,16 +160,6 @@
 
     toggleButton.addEventListener('click', toggleMenu);
 
-    ModAPI.addEventListener("frame", () => {
-        if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities && 
-            Minecraft.$theWorld.$playerEntities.$array1 && 
-            Minecraft.$theWorld.$playerEntities.$array1.length > 1) {
-            toggleButton.style.display = 'flex';
-        } else {
-            toggleButton.style.display = 'none';
-        }
-    });
-
     // Make the menu draggable
     function makeDraggable(element) {
         let isDragging = false;
@@ -198,4 +188,11 @@
 
     document.body.appendChild(menu);
     document.body.appendChild(toggleButton);
+
+    // Ensure the toggle button is always visible
+    ModAPI.addEventListener("frame", () => {
+        if (!document.body.contains(toggleButton)) {
+            document.body.appendChild(toggleButton);
+        }
+    });
 })();
