@@ -65,7 +65,10 @@
     function safeGetPlayerName(entity) {
         try {
             if (entity && entity.$getName && typeof entity.$getName === 'function') {
-                return entity.$getName();
+                const nameObj = entity.$getName();
+                if (nameObj && nameObj.$characters && nameObj.$characters.data) {
+                    return new TextDecoder().decode(new Uint8Array(nameObj.$characters.data));
+                }
             }
         } catch (error) {
             console.error("Error getting player name:", error);
@@ -75,15 +78,21 @@
 
     function updatePlayerList() {
         try {
-            if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities) {
+            if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities && Minecraft.$theWorld.$playerEntities.$array1) {
                 playerList.innerHTML = "";
-                let players = Minecraft.$theWorld.$playerEntities.$array1 || [];
-                players.forEach(entity => {
+                Minecraft.$theWorld.$playerEntities.$array1.forEach(entity => {
                     if (entity) {
                         let name = safeGetPlayerName(entity);
                         if (name) {
                             let li = document.createElement('li');
                             li.textContent = name + ((entity === Minecraft.$thePlayer) ? " (you)" : "");
+                            li.style.cssText = `
+                                padding: 5px 10px;
+                                cursor: pointer;
+                                transition: background-color 0.3s;
+                            `;
+                            li.onmouseover = () => { li.style.backgroundColor = 'rgba(76, 175, 80, 0.3)'; };
+                            li.onmouseout = () => { li.style.backgroundColor = ''; };
                             li.onclick = () => selectPlayer(entity);
                             if (currentProfile === entity) {
                                 li.style.backgroundColor = 'rgba(76, 175, 80, 0.5)';
@@ -103,7 +112,7 @@
             if (player) {
                 currentProfile = player;
                 Minecraft.$renderViewEntity = player;
-                Minecraft.$gameSettings.$hideGUI = 0;
+                Minecraft.$gameSettings.$hideGUI = 0; // Show UI
                 updatePlayerList();
             }
         } catch (error) {
@@ -134,4 +143,11 @@
             document.body.appendChild(toggleButton);
         }
     }, 1000);
+
+    // Update player list periodically when menu is open
+    setInterval(() => {
+        if (menuVisible) {
+            updatePlayerList();
+        }
+    }, 5000);
 })();
