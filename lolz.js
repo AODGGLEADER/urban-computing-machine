@@ -1,132 +1,306 @@
-// Coolest xray mod to ever exist!
+// Epic X-Ray Mod v3.0
 (function () {
     var menuVisible = false;
-    var targets = ["diamond_ore", "gold_ore", "iron_ore", "coal_ore", "emerald_ore", "redstone_ore", "lapis_ore"];
-    var targetStates = Object.fromEntries(targets.map(target => [target, false]));
+    var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
 
-    // Create main button
-    var mainButton = document.createElement('button');
-    mainButton.textContent = 'X-Ray';
-    Object.assign(mainButton.style, {
-        position: 'fixed',
-        top: '20px',
-        left: '20px',
-        padding: '10px 20px',
-        backgroundColor: '#007bff',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        fontFamily: 'Arial, sans-serif',
-        zIndex: '10000'
-    });
-    document.body.appendChild(mainButton);
+    // Inject custom CSS
+    var style = document.createElement('style');
+    style.textContent = `
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+        
+        .xray-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        .xray-container {
+            width: 80%;
+            max-width: 800px;
+            height: 80%;
+            max-height: 600px;
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .xray-title {
+            color: #fff;
+            font-size: 36px;
+            margin-bottom: 20px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 700;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .xray-search {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 25px;
+            border: none;
+            background-color: rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .xray-search:focus {
+            outline: none;
+            background-color: rgba(255,255,255,0.2);
+            box-shadow: 0 0 0 2px #007bff;
+        }
+        .xray-ore-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .xray-ore-label {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .xray-ore-label:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        .xray-checkbox {
+            margin-right: 10px;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .xray-checkbox:checked {
+            background-color: #007bff;
+            position: relative;
+        }
+        .xray-checkbox:checked::before {
+            content: '✔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 14px;
+        }
+        .xray-color-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .xray-add-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        .xray-add-button:hover {
+            background-color: #45a049;
+        }
+        .xray-tooltip {
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    `;
+    document.head.appendChild(style);
 
     // Create menu
     var menu = document.createElement('div');
-    menu.id = 'SCMM';
-    Object.assign(menu.style, {
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'none',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: '9999'
-    });
+    menu.className = 'xray-menu';
     document.body.appendChild(menu);
 
     var menuContainer = document.createElement('div');
-    Object.assign(menuContainer.style, {
-        width: '80%',
-        maxWidth: '800px',
-        height: '80%',
-        maxHeight: '600px',
-        backgroundColor: '#444',
-        borderRadius: '20px',
-        padding: '30px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflowY: 'auto'
-    });
+    menuContainer.className = 'xray-container';
     menu.appendChild(menuContainer);
 
     menuContainer.innerHTML = `
-        <h1 style="color: #fff; font-size: 32px; margin-bottom: 20px;">X-Ray Menu</h1>
-        <input type="text" placeholder="Search ores..." style="width: 100%; padding: 10px; marginBottom: 20px; borderRadius: 5px; border: none;">
-        <div id="oreContainer"></div>
+        <h1 class="xray-title">X-Ray Control Panel</h1>
+        <input type="text" placeholder="Search blocks..." class="xray-search">
+        <div class="xray-ore-container"></div>
+        <button class="xray-add-button">Add Block</button>
     `;
 
-    var searchInput = menuContainer.querySelector('input');
-    var oreContainer = document.getElementById('oreContainer');
+    var searchInput = menuContainer.querySelector('.xray-search');
+    var oreContainer = menuContainer.querySelector('.xray-ore-container');
+    var addButton = menuContainer.querySelector('.xray-add-button');
 
-    // Create checkboxes for each target
-    targets.forEach(function(target) {
+    function createBlockElement(textureName, customName, color) {
         var label = document.createElement('label');
-        Object.assign(label.style, {
-            display: 'block',
-            marginBottom: '10px',
-            color: '#fff',
-            fontFamily: 'Arial, sans-serif'
-        });
+        label.className = 'xray-ore-label';
+        label.setAttribute('data-texture', textureName);
 
         var checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.style.marginRight = '10px';
+        checkbox.className = 'xray-checkbox';
+
+        var colorCircle = document.createElement('div');
+        colorCircle.className = 'xray-color-circle';
+        colorCircle.style.backgroundColor = color || '#FFFFFF';
 
         label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(target.replace('_ore', '').toUpperCase()));
+        label.appendChild(document.createTextNode(customName || textureName));
+        label.appendChild(colorCircle);
 
         checkbox.addEventListener('change', function() {
-            targetStates[target] = this.checked;
-            update();
+            updateBlock(textureName, this.checked, colorCircle.style.backgroundColor);
         });
 
-        oreContainer.appendChild(label);
-    });
-
-    // Add search functionality
-    searchInput.addEventListener('input', function() {
-        var searchTerm = this.value.toLowerCase();
-        Array.from(oreContainer.children).forEach(function(label) {
-            label.style.display = label.textContent.toLowerCase().includes(searchTerm) ? 'block' : 'none';
-        });
-    });
-
-    function update() {
-        Object.keys(ModAPI.blocks).forEach(function(block) {
-            if (targets.includes(block)) {
-                if (targetStates[block]) {
-                    ModAPI.blocks[block].forceRender = true;
-                    ModAPI.blocks[block].tint = getTint(block);
-                } else {
-                    ModAPI.blocks[block].forceRender = false;
-                    ModAPI.blocks[block].tint = undefined;
-                }
-                ModAPI.blocks[block].reload();
+        colorCircle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var newColor = prompt('Enter a new color (e.g., #FF0000, rgb(255,0,0), or rgba(255,0,0,1)):', colorCircle.style.backgroundColor);
+            if (newColor) {
+                colorCircle.style.backgroundColor = newColor;
+                updateBlock(textureName, checkbox.checked, newColor);
             }
         });
 
+        label.addEventListener('mouseover', function(e) {
+            showTooltip(e, 'CTRL + Click to edit or remove');
+        });
+
+        label.addEventListener('mouseout', hideTooltip);
+
+        label.addEventListener('click', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                editBlock(textureName, customName, colorCircle.style.backgroundColor);
+            }
+        });
+
+        return label;
+    }
+
+    function updateBlock(textureName, enabled, color) {
+        if (enabled) {
+            ModAPI.blocks[textureName].forceRender = true;
+            ModAPI.blocks[textureName].tint = hexToRgb(color);
+        } else {
+            ModAPI.blocks[textureName].forceRender = false;
+            ModAPI.blocks[textureName].tint = undefined;
+        }
+        ModAPI.blocks[textureName].reload();
         ModAPI.reloadchunks();
+
+        customBlocks[textureName] = { customName: customBlocks[textureName]?.customName, color: color };
+        localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
     }
 
-    function getTint(block) {
-        const tints = {
-            'diamond_ore': 0x00FFFF,
-            'gold_ore': 0xFFD700,
-            'iron_ore': 0xD3D3D3,
-            'coal_ore': 0x36454F,
-            'emerald_ore': 0x50C878,
-            'redstone_ore': 0xFF0000,
-            'lapis_ore': 0x4169E1
-        };
-        return tints[block] || undefined;
+    function editBlock(textureName, customName, color) {
+        var action = prompt('Enter "edit" to modify or "remove" to delete this block:', 'edit');
+        if (action === 'edit') {
+            var newCustomName = prompt('Enter a new custom name:', customName);
+            var newColor = prompt('Enter a new color:', color);
+            if (newCustomName && newColor) {
+                customBlocks[textureName] = { customName: newCustomName, color: newColor };
+                localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
+                refreshBlocks();
+            }
+        } else if (action === 'remove') {
+            delete customBlocks[textureName];
+            localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
+            refreshBlocks();
+        }
     }
 
-    mainButton.addEventListener('click', toggleMenu);
+    function refreshBlocks() {
+        oreContainer.innerHTML = '';
+        Object.entries(customBlocks).forEach(([textureName, blockInfo]) => {
+            oreContainer.appendChild(createBlockElement(textureName, blockInfo.customName, blockInfo.color));
+        });
+    }
+
+    addButton.addEventListener('click', function() {
+        var textureName = prompt('Enter the texture name (e.g., diamond_ore):');
+        if (textureName) {
+            var customName = prompt('Enter a custom name for this block:');
+            var color = prompt('Enter a color for this block (e.g., #FF0000):');
+            if (customName && color) {
+                customBlocks[textureName] = { customName: customName, color: color };
+                localStorage.setItem('xrayCustomBlocks', JSON.stringify(customBlocks));
+                refreshBlocks();
+            }
+        }
+    });
+
+    searchInput.addEventListener('input', function() {
+        var searchTerm = this.value.toLowerCase();
+        Array.from(oreContainer.children).forEach(function(label) {
+            var blockName = label.textContent.toLowerCase();
+            var textureName = label.getAttribute('data-texture').toLowerCase();
+            label.style.display = blockName.includes(searchTerm) || textureName.includes(searchTerm) ? 'flex' : 'none';
+        });
+    });
+
+    function hexToRgb(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+
+    function showTooltip(event, text) {
+        var tooltip = document.createElement('div');
+        tooltip.className = 'xray-tooltip';
+        tooltip.textContent = text;
+        document.body.appendChild(tooltip);
+
+        var rect = event.target.getBoundingClientRect();
+        tooltip.style.left = rect.left + 'px';
+        tooltip.style.top = (rect.bottom + 5) + 'px';
+
+        setTimeout(() => tooltip.style.opacity = 1, 0);
+    }
+
+    function hideTooltip() {
+        var tooltip = document.querySelector('.xray-tooltip');
+        if (tooltip) {
+            tooltip.style.opacity = 0;
+            setTimeout(() => tooltip.remove(), 300);
+        }
+    }
 
     ModAPI.addEventListener("key", function(ev){
         if(ev.key == 16 && ev.shiftKey && !ev.ctrlKey && !ev.altKey){ // Right Shift key
@@ -137,5 +311,14 @@
     function toggleMenu() {
         menuVisible = !menuVisible;
         menu.style.display = menuVisible ? 'flex' : 'none';
+        if (menuVisible) {
+            menuContainer.style.animation = 'none';
+            menuContainer.offsetHeight; // Trigger reflow
+            menuContainer.style.animation = null;
+            refreshBlocks();
+        }
     }
+
+    // Initial load of custom blocks
+    refreshBlocks();
 })();
