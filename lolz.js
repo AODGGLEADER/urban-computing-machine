@@ -1,4 +1,4 @@
-// Epic X-Ray Mod v3.0
+// Epic X-Ray Mod v3.1
 (function () {
     var menuVisible = false;
     var customBlocks = JSON.parse(localStorage.getItem('xrayCustomBlocks')) || {};
@@ -303,8 +303,9 @@
     }
 
     ModAPI.addEventListener("key", function(ev){
-        if(ev.key == 16 && ev.shiftKey && !ev.ctrlKey && !ev.altKey){ // Right Shift key
+        if(ev.key == 16){ // 16 is the key code for Shift
             toggleMenu();
+            ev.preventDefault();
         }
     });
 
