@@ -145,11 +145,13 @@
         }
     });
 
-    ModAPI.addEventListener("key", (event) => {
-        if (event.key === 187 && event.type === "keydown") { // 187 is the key code for "+"
-            toggleMenu();
-        }
-    });
+ModAPI.addEventListener("key", (event) => {
+    // Check for both '=' and '+' keys
+    if ((event.key === 187 || event.key === 61 || event.key === '=' || event.key === '+') && event.type === "keydown") {
+        toggleMenu();
+        event.preventDefault(); // Prevent default action
+    }
+});
 
     // Make the menu draggable
     let isDragging = false;
