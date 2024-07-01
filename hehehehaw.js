@@ -46,6 +46,29 @@
     `;
     menu.appendChild(playerList);
 
+    // Create toggle button
+    let toggleButton = document.createElement('button');
+    toggleButton.id = 'player-selector-toggle';
+    toggleButton.textContent = '👥';
+    toggleButton.style.cssText = `
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        background-color: rgba(0, 0, 0, 0.7);
+        border: 2px solid #4CAF50;
+        border-radius: 50%;
+        color: #ffffff;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
+        z-index: 1001;
+    `;
+
     // Create and append style element
     let style = document.createElement('style');
     style.textContent = `
@@ -73,6 +96,10 @@
         }
         #player-selector-menu li.selected {
             background-color: rgba(76, 175, 80, 0.5);
+        }
+        #player-selector-toggle:hover {
+            background-color: rgba(76, 175, 80, 0.5);
+            transform: scale(1.1);
         }
     `;
     document.head.appendChild(style);
@@ -104,7 +131,7 @@
 
     function selectPlayer(name) {
         currentProfile = Minecraft.$theWorld.$playerEntities.$array1.data.find(element => {
-            return element && element.$getName && element.$getName() === name;
+            return element && element.$getName && typeof element.$getName === 'function' && element.$getName() === name;
         });
         if (currentProfile) {
             Minecraft.$renderViewEntity = currentProfile;
@@ -137,21 +164,19 @@
         if (menuVisible) {
             updatePlayerList();
         }
+        console.log("Menu toggled. Visible:", menuVisible);
     }
+
+    toggleButton.addEventListener('click', toggleMenu);
 
     ModAPI.addEventListener("frame", () => {
         if (Minecraft.$theWorld && Minecraft.$theWorld.$playerEntities.$array1.data.length > 1) {
             updateSpectatorView();
+            toggleButton.style.display = 'flex';
+        } else {
+            toggleButton.style.display = 'none';
         }
     });
-
-ModAPI.addEventListener("key", (event) => {
-    // Check for both '=' and '+' keys
-    if ((event.key === 187 || event.key === 61 || event.key === '=' || event.key === '+') && event.type === "keydown") {
-        toggleMenu();
-        event.preventDefault(); // Prevent default action
-    }
-});
 
     // Make the menu draggable
     let isDragging = false;
@@ -175,4 +200,5 @@ ModAPI.addEventListener("key", (event) => {
     });
 
     document.body.appendChild(menu);
+    document.body.appendChild(toggleButton);
 })();
