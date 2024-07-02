@@ -2,28 +2,14 @@ ModAPI.require("player");
 
 var timer;
 var fishRodId = ModAPI.items.fishing_rod.getID();
-var modEnabled = false; // Start with the mod disabled
+var modEnabled = false;
 var menuVisible = false;
-
-// Settings
-var settings = {
-    showStats: true,
-    showTimer: true,
-    showVisualIndicator: true
-};
-
-// Statistics
-var fishCaught = 0;
-var rareCaught = 0;
-var currentStreak = 0;
-var bestStreak = 0;
-var fishingStartTime = 0;
+var autoRecastDelay = 1000; // Default delay of 1 second (1000 ms)
 
 // Auto-fishing logic
 ModAPI.addEventListener("packetsoundeffect", (ev) => {
   if (ev.soundName === "random.splash" && modEnabled) {
     rightClick();
-    updateStats();
   }
 });
 
@@ -40,6 +26,7 @@ ModAPI.addEventListener("update", () => {
       return;
     }
     rightClick();
+    timer = Math.floor(autoRecastDelay / 50); // Convert ms to ticks (assuming 20 ticks per second)
   }
 });
 
@@ -49,16 +36,6 @@ function rightClick() {
     return;
   }
   ModAPI.rightClickMouse();
-  timer = 15;
-}
-
-function updateStats() {
-    fishCaught++;
-    currentStreak++;
-    if (currentStreak > bestStreak) bestStreak = currentStreak;
-    if (Math.random() < 0.1) {
-        rareCaught++;
-    }
 }
 
 // Create menu
@@ -104,31 +81,24 @@ toggleButton.onclick = function() {
 
 menuContainer.appendChild(toggleButton);
 
-// Create settings toggles
-function createSettingToggle(label, setting) {
-    let container = document.createElement('div');
-    container.style.marginBottom = '10px';
+// Add Auto-Recast Delay setting
+let delayContainer = document.createElement('div');
+delayContainer.style.marginBottom = '10px';
 
-    let checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = settings[setting];
-    checkbox.style.marginRight = '10px';
+let delayLabel = document.createElement('span');
+delayLabel.textContent = 'Auto-Recast Delay (ms): ';
+delayContainer.appendChild(delayLabel);
 
-    let text = document.createElement('span');
-    text.textContent = label;
+let delayInput = document.createElement('input');
+delayInput.type = 'number';
+delayInput.value = autoRecastDelay;
+delayInput.style.width = '60px';
+delayInput.onchange = function() {
+    autoRecastDelay = parseInt(delayInput.value);
+};
+delayContainer.appendChild(delayInput);
 
-    checkbox.onchange = function() {
-        settings[setting] = checkbox.checked;
-    };
-
-    container.appendChild(checkbox);
-    container.appendChild(text);
-    menuContainer.appendChild(container);
-}
-
-createSettingToggle('Show Statistics', 'showStats');
-createSettingToggle('Show Timer', 'showTimer');
-createSettingToggle('Show Visual Indicator', 'showVisualIndicator');
+menuContainer.appendChild(delayContainer);
 
 // Create close button
 let closeButton = document.createElement('button');
@@ -169,27 +139,3 @@ menuToggleButton.onclick = function() {
 };
 
 document.body.appendChild(menuToggleButton);
-
-// Render function for stats and visual indicator
-ModAPI.addEventListener("render", () => {
-    if (settings.showVisualIndicator && modEnabled && isHoldingFishingRod()) {
-        ModAPI.rendering.drawRect(10, 10, 30, 30, 0x3366CC);
-    }
-    if (settings.showStats && modEnabled) {
-        ModAPI.rendering.drawString(`Fish: ${fishCaught} | Rare: ${rareCaught} | Streak: ${currentStreak} | Best: ${bestStreak}`, 10, ModAPI.gui.getScaledHeight() - 40, 0xFFFFFF);
-    }
-    if (settings.showTimer && modEnabled) {
-        if (isHoldingFishingRod()) {
-            if (fishingStartTime === 0) fishingStartTime = Date.now();
-            let sessionTime = Math.floor((Date.now() - fishingStartTime) / 1000);
-            ModAPI.rendering.drawString(`Fishing Time: ${sessionTime}s`, 10, ModAPI.gui.getScaledHeight() - 20, 0xFFFFFF);
-        } else {
-            fishingStartTime = 0;
-        }
-    }
-});
-
-function isHoldingFishingRod() {
-    return ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem] &&
-           ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem].itemId === fishRodId;
-}
