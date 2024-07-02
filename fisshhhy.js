@@ -2,13 +2,28 @@ ModAPI.require("player");
 
 var timer;
 var fishRodId = ModAPI.items.fishing_rod.getID();
-var modEnabled = true;
+var modEnabled = false; // Start with the mod disabled
 var menuVisible = false;
+
+// Settings
+var settings = {
+    showStats: true,
+    showTimer: true,
+    showVisualIndicator: true
+};
+
+// Statistics
+var fishCaught = 0;
+var rareCaught = 0;
+var currentStreak = 0;
+var bestStreak = 0;
+var fishingStartTime = 0;
 
 // Auto-fishing logic
 ModAPI.addEventListener("packetsoundeffect", (ev) => {
   if (ev.soundName === "random.splash" && modEnabled) {
     rightClick();
+    updateStats();
   }
 });
 
@@ -35,6 +50,15 @@ function rightClick() {
   }
   ModAPI.rightClickMouse();
   timer = 15;
+}
+
+function updateStats() {
+    fishCaught++;
+    currentStreak++;
+    if (currentStreak > bestStreak) bestStreak = currentStreak;
+    if (Math.random() < 0.1) {
+        rareCaught++;
+    }
 }
 
 // Create menu
@@ -80,6 +104,32 @@ toggleButton.onclick = function() {
 
 menuContainer.appendChild(toggleButton);
 
+// Create settings toggles
+function createSettingToggle(label, setting) {
+    let container = document.createElement('div');
+    container.style.marginBottom = '10px';
+
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = settings[setting];
+    checkbox.style.marginRight = '10px';
+
+    let text = document.createElement('span');
+    text.textContent = label;
+
+    checkbox.onchange = function() {
+        settings[setting] = checkbox.checked;
+    };
+
+    container.appendChild(checkbox);
+    container.appendChild(text);
+    menuContainer.appendChild(container);
+}
+
+createSettingToggle('Show Statistics', 'showStats');
+createSettingToggle('Show Timer', 'showTimer');
+createSettingToggle('Show Visual Indicator', 'showVisualIndicator');
+
 // Create close button
 let closeButton = document.createElement('button');
 closeButton.textContent = 'Close';
@@ -119,3 +169,27 @@ menuToggleButton.onclick = function() {
 };
 
 document.body.appendChild(menuToggleButton);
+
+// Render function for stats and visual indicator
+ModAPI.addEventListener("render", () => {
+    if (settings.showVisualIndicator && modEnabled && isHoldingFishingRod()) {
+        ModAPI.rendering.drawRect(10, 10, 30, 30, 0x3366CC);
+    }
+    if (settings.showStats && modEnabled) {
+        ModAPI.rendering.drawString(`Fish: ${fishCaught} | Rare: ${rareCaught} | Streak: ${currentStreak} | Best: ${bestStreak}`, 10, ModAPI.gui.getScaledHeight() - 40, 0xFFFFFF);
+    }
+    if (settings.showTimer && modEnabled) {
+        if (isHoldingFishingRod()) {
+            if (fishingStartTime === 0) fishingStartTime = Date.now();
+            let sessionTime = Math.floor((Date.now() - fishingStartTime) / 1000);
+            ModAPI.rendering.drawString(`Fishing Time: ${sessionTime}s`, 10, ModAPI.gui.getScaledHeight() - 20, 0xFFFFFF);
+        } else {
+            fishingStartTime = 0;
+        }
+    }
+});
+
+function isHoldingFishingRod() {
+    return ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem] &&
+           ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem].itemId === fishRodId;
+}
