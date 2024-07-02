@@ -1,7 +1,6 @@
 ModAPI.require("player");
 ModAPI.require("gui");
 ModAPI.require("rendering");
-ModAPI.require("audio");
 
 // Auto-fishing variables
 var fishRodId = ModAPI.items.fishing_rod.getID();
@@ -20,7 +19,6 @@ var uiVisible = false;
 var uiSettings = {
     showStats: true,
     showTimer: true,
-    playAlerts: true,
     showVisualIndicator: true
 };
 
@@ -30,7 +28,7 @@ const LIGHT_BLUE = 0x3366CC;
 const WHITE = 0xFFFFFF;
 
 // Main auto-fishing logic
-ModAPI.addEventListener("update", () => {
+ModAPI.on("update", () => {
     if (!autoFishingEnabled) return;
 
     if (timer > 0) {
@@ -45,7 +43,7 @@ ModAPI.addEventListener("update", () => {
     }
 });
 
-ModAPI.addEventListener("packetsoundeffect", (ev) => {
+ModAPI.on("packetsoundeffect", (ev) => {
     if (ev.soundName === "random.splash" && autoFishingEnabled) {
         rightClick();
         updateStats();
@@ -69,16 +67,12 @@ function updateStats() {
     if (currentStreak > bestStreak) bestStreak = currentStreak;
     if (Math.random() < 0.1) {
         rareCaught++;
-        if (uiSettings.playAlerts) playRareCatchSound();
     }
 }
 
-function playRareCatchSound() {
-    ModAPI.audio.playSound("random.orb", 1.0, 1.0);
-}
-
 // UI Rendering
-ModAPI.addEventListener("render", () => {
+ModAPI.on("render", () => {
+    renderToggleButton();
     if (uiVisible) renderUI();
     if (uiSettings.showVisualIndicator && isHoldingFishingRod()) {
         ModAPI.rendering.drawRect(10, 10, 30, 30, LIGHT_BLUE);
@@ -86,6 +80,16 @@ ModAPI.addEventListener("render", () => {
     if (uiSettings.showStats) renderStats();
     if (uiSettings.showTimer) renderTimer();
 });
+
+function renderToggleButton() {
+    if (ModAPI.rendering.isMouseOver(ModAPI.gui.getScaledWidth() - 60, 5, 55, 20)) {
+        ModAPI.rendering.drawRect(ModAPI.gui.getScaledWidth() - 60, 5, 55, 20, LIGHT_BLUE);
+        if (ModAPI.input.isMouseButtonDown(0)) {
+            uiVisible = !uiVisible;
+        }
+    }
+    ModAPI.rendering.drawString("Settings", ModAPI.gui.getScaledWidth() - 55, 10, WHITE);
+}
 
 function renderUI() {
     // Main UI background
@@ -98,8 +102,7 @@ function renderUI() {
     renderToggle("Enable Auto-Fishing", 120, 130, autoFishingEnabled, (val) => autoFishingEnabled = val);
     renderToggle("Show Statistics", 120, 150, uiSettings.showStats, (val) => uiSettings.showStats = val);
     renderToggle("Show Timer", 120, 170, uiSettings.showTimer, (val) => uiSettings.showTimer = val);
-    renderToggle("Play Alerts", 120, 190, uiSettings.playAlerts, (val) => uiSettings.playAlerts = val);
-    renderToggle("Visual Indicator", 120, 210, uiSettings.showVisualIndicator, (val) => uiSettings.showVisualIndicator = val);
+    renderToggle("Visual Indicator", 120, 190, uiSettings.showVisualIndicator, (val) => uiSettings.showVisualIndicator = val);
     
     // Close button
     if (ModAPI.rendering.isMouseOver(350, 105, 40, 20)) {
@@ -133,12 +136,5 @@ function renderTimer() {
     }
 }
 
-// Key binding to open/close UI
-ModAPI.addEventListener("keypress", (ev) => {
-    if (ev.key === "R") { // 'R' key to toggle UI
-        uiVisible = !uiVisible;
-    }
-});
-
 // Initialize
-ModAPI.chat.print("Auto-Fishing Mod loaded. Press 'R' to open settings.");
+ModAPI.chat.print("Auto-Fishing Mod loaded. Click the 'Settings' button to configure.");
