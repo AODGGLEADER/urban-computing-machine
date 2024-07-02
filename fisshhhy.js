@@ -1,140 +1,121 @@
 ModAPI.require("player");
-ModAPI.require("gui");
-ModAPI.require("rendering");
 
-// Auto-fishing variables
+var timer;
 var fishRodId = ModAPI.items.fishing_rod.getID();
-var timer = 0;
-var autoFishingEnabled = true;
+var modEnabled = true;
+var menuVisible = false;
 
-// Statistics
-var fishCaught = 0;
-var rareCaught = 0;
-var currentStreak = 0;
-var bestStreak = 0;
-var fishingStartTime = 0;
-
-// UI variables
-var uiVisible = false;
-var uiSettings = {
-    showStats: true,
-    showTimer: true,
-    showVisualIndicator: true
-};
-
-// Colors
-const DARK_BLUE = 0x000033;
-const LIGHT_BLUE = 0x3366CC;
-const WHITE = 0xFFFFFF;
-
-// Main auto-fishing logic
-ModAPI.on("update", () => {
-    if (!autoFishingEnabled) return;
-
-    if (timer > 0) {
-        timer--;
-        return;
-    }
-
-    if (ModAPI.player.fishEntity) return;
-
-    if (isHoldingFishingRod()) {
-        rightClick();
-    }
+// Auto-fishing logic
+ModAPI.addEventListener("packetsoundeffect", (ev) => {
+  if (ev.soundName === "random.splash" && modEnabled) {
+    rightClick();
+  }
 });
 
-ModAPI.on("packetsoundeffect", (ev) => {
-    if (ev.soundName === "random.splash" && autoFishingEnabled) {
-        rightClick();
-        updateStats();
+ModAPI.addEventListener("update", () => {
+  if (!modEnabled) return;
+  
+  if (ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem] &&
+      ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem].itemId === fishRodId) {
+    if (timer > 0) {
+      timer--;
+      return;
     }
+    if (ModAPI.player.fishEntity) {
+      return;
+    }
+    rightClick();
+  }
 });
 
 function rightClick() {
-    if (!isHoldingFishingRod()) return;
-    ModAPI.rightClickMouse();
-    timer = 15;
+  if (!ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem] ||
+      !ModAPI.player.inventory.mainInventory[ModAPI.player.inventory.currentItem].itemId === fishRodId) {
+    return;
+  }
+  ModAPI.rightClickMouse();
+  timer = 15;
 }
 
-function isHoldingFishingRod() {
-    var heldItem = ModAPI.player.getHeldItem();
-    return heldItem && heldItem.itemId === fishRodId;
-}
+// Create menu
+let menuContainer = document.createElement('div');
+menuContainer.id = 'auto-fishing-menu';
+menuContainer.style.display = 'none';
+menuContainer.style.position = 'absolute';
+menuContainer.style.top = '50%';
+menuContainer.style.left = '50%';
+menuContainer.style.transform = 'translate(-50%, -50%)';
+menuContainer.style.backgroundColor = 'rgba(0, 0, 33, 0.8)';
+menuContainer.style.padding = '20px';
+menuContainer.style.borderRadius = '10px';
+menuContainer.style.color = 'white';
+menuContainer.style.fontFamily = 'Arial, sans-serif';
+menuContainer.style.zIndex = '1000';
 
-function updateStats() {
-    fishCaught++;
-    currentStreak++;
-    if (currentStreak > bestStreak) bestStreak = currentStreak;
-    if (Math.random() < 0.1) {
-        rareCaught++;
-    }
-}
+// Create title
+let title = document.createElement('h2');
+title.textContent = 'Auto-Fishing Menu';
+title.style.marginTop = '0';
+title.style.marginBottom = '15px';
+title.style.textAlign = 'center';
+menuContainer.appendChild(title);
 
-// UI Rendering
-ModAPI.on("render", () => {
-    renderToggleButton();
-    if (uiVisible) renderUI();
-    if (uiSettings.showVisualIndicator && isHoldingFishingRod()) {
-        ModAPI.rendering.drawRect(10, 10, 30, 30, LIGHT_BLUE);
-    }
-    if (uiSettings.showStats) renderStats();
-    if (uiSettings.showTimer) renderTimer();
-});
+// Create toggle button
+let toggleButton = document.createElement('button');
+toggleButton.textContent = modEnabled ? 'Disable' : 'Enable';
+toggleButton.style.width = '100%';
+toggleButton.style.padding = '10px';
+toggleButton.style.marginBottom = '10px';
+toggleButton.style.backgroundColor = modEnabled ? '#4CAF50' : '#f44336';
+toggleButton.style.color = 'white';
+toggleButton.style.border = 'none';
+toggleButton.style.borderRadius = '5px';
+toggleButton.style.cursor = 'pointer';
 
-function renderToggleButton() {
-    if (ModAPI.rendering.isMouseOver(ModAPI.gui.getScaledWidth() - 60, 5, 55, 20)) {
-        ModAPI.rendering.drawRect(ModAPI.gui.getScaledWidth() - 60, 5, 55, 20, LIGHT_BLUE);
-        if (ModAPI.input.isMouseButtonDown(0)) {
-            uiVisible = !uiVisible;
-        }
-    }
-    ModAPI.rendering.drawString("Settings", ModAPI.gui.getScaledWidth() - 55, 10, WHITE);
-}
+toggleButton.onclick = function() {
+    modEnabled = !modEnabled;
+    toggleButton.textContent = modEnabled ? 'Disable' : 'Enable';
+    toggleButton.style.backgroundColor = modEnabled ? '#4CAF50' : '#f44336';
+};
 
-function renderUI() {
-    // Main UI background
-    ModAPI.rendering.drawRect(100, 100, 300, 200, DARK_BLUE);
-    
-    // Title
-    ModAPI.rendering.drawString("Auto-Fishing Settings", 120, 110, WHITE);
-    
-    // Settings options
-    renderToggle("Enable Auto-Fishing", 120, 130, autoFishingEnabled, (val) => autoFishingEnabled = val);
-    renderToggle("Show Statistics", 120, 150, uiSettings.showStats, (val) => uiSettings.showStats = val);
-    renderToggle("Show Timer", 120, 170, uiSettings.showTimer, (val) => uiSettings.showTimer = val);
-    renderToggle("Visual Indicator", 120, 190, uiSettings.showVisualIndicator, (val) => uiSettings.showVisualIndicator = val);
-    
-    // Close button
-    if (ModAPI.rendering.isMouseOver(350, 105, 40, 20)) {
-        ModAPI.rendering.drawRect(350, 105, 40, 20, LIGHT_BLUE);
-        if (ModAPI.input.isMouseButtonDown(0)) uiVisible = false;
-    }
-    ModAPI.rendering.drawString("Close", 355, 110, WHITE);
-}
+menuContainer.appendChild(toggleButton);
 
-function renderToggle(label, x, y, value, callback) {
-    ModAPI.rendering.drawString(label, x, y, WHITE);
-    let toggleX = x + 150;
-    let toggleColor = value ? LIGHT_BLUE : DARK_BLUE;
-    ModAPI.rendering.drawRect(toggleX, y, 20, 10, toggleColor);
-    if (ModAPI.rendering.isMouseOver(toggleX, y, 20, 10) && ModAPI.input.isMouseButtonDown(0)) {
-        callback(!value);
-    }
-}
+// Create close button
+let closeButton = document.createElement('button');
+closeButton.textContent = 'Close';
+closeButton.style.width = '100%';
+closeButton.style.padding = '10px';
+closeButton.style.backgroundColor = '#3366CC';
+closeButton.style.color = 'white';
+closeButton.style.border = 'none';
+closeButton.style.borderRadius = '5px';
+closeButton.style.cursor = 'pointer';
 
-function renderStats() {
-    ModAPI.rendering.drawString(`Fish: ${fishCaught} | Rare: ${rareCaught} | Streak: ${currentStreak} | Best: ${bestStreak}`, 10, ModAPI.gui.getScaledHeight() - 40, WHITE);
-}
+closeButton.onclick = function() {
+    menuContainer.style.display = 'none';
+    menuVisible = false;
+};
 
-function renderTimer() {
-    if (isHoldingFishingRod()) {
-        if (fishingStartTime === 0) fishingStartTime = Date.now();
-        let sessionTime = Math.floor((Date.now() - fishingStartTime) / 1000);
-        ModAPI.rendering.drawString(`Fishing Time: ${sessionTime}s`, 10, ModAPI.gui.getScaledHeight() - 20, WHITE);
-    } else {
-        fishingStartTime = 0;
-    }
-}
+menuContainer.appendChild(closeButton);
 
-// Initialize
-ModAPI.chat.print("Auto-Fishing Mod loaded. Click the 'Settings' button to configure.");
+document.body.appendChild(menuContainer);
+
+// Create menu toggle button
+let menuToggleButton = document.createElement('button');
+menuToggleButton.textContent = 'Menu';
+menuToggleButton.style.position = 'absolute';
+menuToggleButton.style.top = '10px';
+menuToggleButton.style.right = '10px';
+menuToggleButton.style.padding = '5px 10px';
+menuToggleButton.style.backgroundColor = '#3366CC';
+menuToggleButton.style.color = 'white';
+menuToggleButton.style.border = 'none';
+menuToggleButton.style.borderRadius = '5px';
+menuToggleButton.style.cursor = 'pointer';
+
+menuToggleButton.onclick = function() {
+    menuVisible = !menuVisible;
+    menuContainer.style.display = menuVisible ? 'block' : 'none';
+};
+
+document.body.appendChild(menuToggleButton);
